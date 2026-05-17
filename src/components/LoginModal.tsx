@@ -71,7 +71,11 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
         <div className="px-8 pt-10 pb-8 flex flex-col items-center">
           {/* Header Texts */}
           <h2 className="text-[18px] font-bold text-[#1a1a1a] uppercase text-center mb-6 leading-tight">
-            {mode === "login" ? "HỆ THỐNG QUẢN LÝ DỮ LIỆU\nCÂY XANH ĐÔ THỊ" : "ĐĂNG KÝ TÀI KHOẢN TRUY CẬP\nHỆ THỐNG CÂY XANH"}
+            {mode === "login" ? (
+              <>HỆ THỐNG QUẢN LÝ DỮ LIỆU<br />CÂY XANH ĐÔ THỊ</>
+            ) : (
+              <>ĐĂNG KÝ TÀI KHOẢN TRUY CẬP<br />HỆ THỐNG CÂY XANH</>
+            )}
           </h2>
 
           {/* Logo Area */}
@@ -102,13 +106,13 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
                 <div>
                   <label className="block text-[13px] font-medium text-[#4b5563] mb-1.5">Họ và tên</label>
                   <div className="relative">
-                    <i className="material-icons absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] text-[18px]">person_outline</i>
+                    <i className="material-icons absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] text-[18px]">person</i>
                     <input 
                       type="text" 
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full bg-white border border-[#d1d5db] rounded-lg py-2.5 pl-10 pr-4 text-[14px] text-[#333] focus:outline-none focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] transition-all"
+                      className="w-full bg-white border border-[#d1d5db] rounded-lg !py-2.5 !pl-10 !pr-4 text-[14px] text-[#333] focus:outline-none focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] transition-all"
                       placeholder="Nhập họ và tên..."
                     />
                   </div>
@@ -118,13 +122,13 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
               <div>
                 <label className="block text-[13px] font-medium text-[#4b5563] mb-1.5">Email</label>
                 <div className="relative">
-                  <i className="material-icons absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] text-[18px]">mail_outline</i>
+                  <i className="material-icons absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] text-[18px]">email</i>
                   <input 
                     type="email" 
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full bg-white border border-[#d1d5db] rounded-lg py-2.5 pl-10 pr-4 text-[14px] text-[#333] focus:outline-none focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] transition-all"
+                    className="w-full bg-white border border-[#d1d5db] rounded-lg !py-2.5 !pl-10 !pr-4 text-[14px] text-[#333] focus:outline-none focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] transition-all"
                     placeholder="Tài khoản email"
                   />
                 </div>
@@ -133,13 +137,13 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
               <div>
                 <label className="block text-[13px] font-medium text-[#4b5563] mb-1.5">Mật khẩu</label>
                 <div className="relative">
-                  <i className="material-icons absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] text-[18px]">lock_outline</i>
+                  <i className="material-icons absolute left-3.5 top-1/2 -translate-y-1/2 text-[#9ca3af] text-[18px]">lock</i>
                   <input 
                     type="password" 
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-white border border-[#d1d5db] rounded-lg py-2.5 pl-10 pr-4 text-[14px] text-[#333] focus:outline-none focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] transition-all tracking-widest font-mono"
+                    className="w-full bg-white border border-[#d1d5db] rounded-lg !py-2.5 !pl-10 !pr-4 text-[14px] text-[#333] focus:outline-none focus:border-[#3b82f6] focus:ring-1 focus:ring-[#3b82f6] transition-all tracking-widest font-mono"
                     placeholder="••••••••"
                   />
                 </div>
@@ -147,7 +151,7 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
             </div>
 
             {mode === "login" && (
-              <div className="flex items-center justify-between mt-4 mb-2">
+              <div className="flex items-center justify-between !mt-4 !mb-2">
                 <label className="flex items-center gap-2 cursor-pointer group">
                   <div className={`w-4 h-4 rounded-[4px] border flex items-center justify-center transition-colors ${remember ? 'bg-[#3b82f6] border-[#3b82f6]' : 'bg-white border-[#d1d5db] group-hover:border-[#3b82f6]'}`}>
                     {remember && <i className="material-icons text-white text-[12px]">check</i>}
@@ -164,7 +168,7 @@ export default function LoginModal({ onClose, onSuccess }: LoginModalProps) {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full mt-5 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-medium py-2.5 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed text-[14px]"
+              className="w-full !mt-5 bg-[#3b82f6] hover:bg-[#2563eb] text-white font-medium !py-2.5 rounded-lg transition-colors shadow-sm disabled:opacity-70 disabled:cursor-not-allowed text-[14px]"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
