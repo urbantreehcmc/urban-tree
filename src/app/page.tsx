@@ -58,7 +58,7 @@ const TAB_ICONS: Record<string, string> = {
   patrol: "directions_walk",
   tasks: "assignment",
   spatial: "layers",
-  species: "potted_plant",
+  species: "eco",
   wards: "location_city",
   contracts: "description",
   contractors: "business",

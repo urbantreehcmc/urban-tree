@@ -41,7 +41,7 @@ const MAIN_NAV = [
 ];
 
 const CONFIG_NAV = [
-  { id: "species", label: TAB_LABELS.species, icon: "potted_plant" },
+  { id: "species", label: TAB_LABELS.species, icon: "eco" },
   { id: "wards", label: TAB_LABELS.wards, icon: "location_city" },
   { id: "contracts", label: TAB_LABELS.contracts, icon: "description" },
   { id: "contractors", label: TAB_LABELS.contractors, icon: "business" },
