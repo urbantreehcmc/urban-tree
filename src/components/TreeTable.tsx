@@ -204,104 +204,103 @@ export default function TreeTable({ onManageTree }: TreeTableProps) {
 
       {/* Table */}
       <div className="card" style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        {!hasFilter ? (
-          <div className="empty-state" style={{ flex: 1 }}>
-            <i className="material-icons" style={{ fontSize: 56, color: "#ddd", marginBottom: 16 }}>search</i>
-            <h3>Sẵn sàng tra cứu dữ liệu</h3>
-            <p>Sử dụng các bộ lọc ở trên để bắt đầu truy vấn trong tổng số {totalCount.toLocaleString()} bản ghi cây xanh.</p>
+        {/* Loading overlay */}
+        {loading && (
+          <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.7)", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <div className="loader-spinner" />
           </div>
-        ) : (
-          <>
-            {/* Loading overlay */}
-            {loading && (
-              <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.7)", zIndex: 10, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div className="loader-spinner" />
+        )}
+
+        <div style={{ flex: 1, overflow: "auto", position: "relative", border: "1px solid #eee", borderRadius: 8 }}>
+          <table className="data-table" style={{ minWidth: 1100, borderCollapse: "separate", borderSpacing: 0 }}>
+            <thead>
+              <tr>
+                <th style={{ width: 120, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>LOÀI CÂY</th>
+                <th style={{ width: 80, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>SỐ HIỆU</th>
+                <th style={{ width: 100, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>PHÂN LOẠI</th>
+                <th style={{ width: 180, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>ĐỊA CHỈ</th>
+                <th style={{ width: 150, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>ĐƯỜNG/CV/MX</th>
+                <th style={{ width: 130, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>PHƯỜNG XÃ</th>
+                <th style={{ width: 100, textAlign: "center", position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>QUẬN HUYỆN</th>
+                <th style={{ width: 100, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>TRẠNG THÁI</th>
+                <th style={{ width: 80, textAlign: "center", position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>TỌA ĐỘ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {!hasFilter ? (
+                <tr>
+                  <td colSpan={9} style={{ padding: "60px 16px", textAlign: "center" }}>
+                    <i className="material-icons" style={{ fontSize: 48, color: "#ddd", marginBottom: 16, display: "block" }}>search</i>
+                    <h3 style={{ fontSize: 16, color: "#555", fontWeight: 500, marginBottom: 8 }}>Sẵn sàng tra cứu dữ liệu</h3>
+                    <p style={{ color: "#999", fontSize: 13 }}>Sử dụng các bộ lọc ở trên để bắt đầu truy vấn trong tổng số {totalCount.toLocaleString()} bản ghi cây xanh.</p>
+                  </td>
+                </tr>
+              ) : trees.map((t) => (
+                <tr
+                  key={t.id}
+                  onClick={() => onManageTree?.(t.id)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal", wordBreak: "break-word" }}>{t.loaiCay}</td>
+                  <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal" }}>{t.soCay}</td>
+                  <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal" }}>
+                    {t.phanLoai || "—"}
+                  </td>
+                  <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal", wordBreak: "break-word" }}>{t.diaChi || "—"}</td>
+                  <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal", wordBreak: "break-word" }}>{t.tenDuong}</td>
+                  <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal" }}>{t.phuong}</td>
+                  <td style={{ color: "#444", fontSize: 13, textAlign: "center", whiteSpace: "normal" }}>Quận {t.quan}</td>
+                  <td>{statusBadge(t.trangThai)}</td>
+                  <td style={{ textAlign: "center" }}>
+                    {t.lat ? (
+                      <span className="status-badge status-healthy" style={{ fontSize: 11, fontWeight: 400 }}>
+                        GPS
+                      </span>
+                    ) : (
+                      <span style={{ color: "#ccc", fontSize: 13 }}>—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              {hasFilter && trees.length === 0 && !loading && (
+                <tr>
+                  <td colSpan={9} style={{ padding: "40px 16px", textAlign: "center", color: "#bbb", fontStyle: "italic" }}>
+                    Không tìm thấy kết quả phù hợp.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+            {hasFilter && (
+              <div className="pagination">
+                <div className="pagination-info">
+                  Đang xem <strong>{trees.length}</strong> trên {totalCount.toLocaleString()} bản ghi · Trang <strong>{page}</strong> / {totalPages}
+                </div>
+                <div className="pagination-buttons">
+                  <button className="pagination-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+                    <i className="material-icons" style={{ fontSize: 18 }}>chevron_left</i>
+                  </button>
+                  {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                    let p = page;
+                    if (page <= 3) p = i + 1;
+                    else if (page >= totalPages - 2) p = totalPages - 4 + i;
+                    else p = page - 2 + i;
+                    if (p < 1 || p > totalPages) return null;
+                    return (
+                      <button key={p} onClick={() => setPage(p)} className={`pagination-btn ${page === p ? "active" : ""}`}>
+                        {p}
+                      </button>
+                    );
+                  })}
+                  <button className="pagination-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
+                    <i className="material-icons" style={{ fontSize: 18 }}>chevron_right</i>
+                  </button>
+                </div>
               </div>
             )}
-
-            <div style={{ flex: 1, overflow: "auto", position: "relative", border: "1px solid #eee", borderRadius: 8 }}>
-              <table className="data-table" style={{ minWidth: 1100, borderCollapse: "separate", borderSpacing: 0 }}>
-                <thead>
-                  <tr>
-                    <th style={{ width: 120, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>LOÀI CÂY</th>
-                    <th style={{ width: 80, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>SỐ HIỆU</th>
-                    <th style={{ width: 100, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>PHÂN LOẠI</th>
-                    <th style={{ width: 180, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>ĐỊA CHỈ</th>
-                    <th style={{ width: 150, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>ĐƯỜNG/CV/MX</th>
-                    <th style={{ width: 130, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>PHƯỜNG XÃ</th>
-                    <th style={{ width: 100, textAlign: "center", position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>QUẬN HUYỆN</th>
-                    <th style={{ width: 100, position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>TRẠNG THÁI</th>
-                    <th style={{ width: 80, textAlign: "center", position: "sticky", top: 0, backgroundColor: "#f8fafc", zIndex: 10, borderBottom: "2px solid #eee" }}>TỌA ĐỘ</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {trees.map((t) => (
-                    <tr
-                      key={t.id}
-                      onClick={() => onManageTree?.(t.id)}
-                      style={{ cursor: "pointer" }}
-                    >
-                      <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal", wordBreak: "break-word" }}>{t.loaiCay}</td>
-                      <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal" }}>{t.soCay}</td>
-                      <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal" }}>
-                        {t.phanLoai || "—"}
-                      </td>
-                      <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal", wordBreak: "break-word" }}>{t.diaChi || "—"}</td>
-                      <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal", wordBreak: "break-word" }}>{t.tenDuong}</td>
-                      <td style={{ color: "#444", fontSize: 13, whiteSpace: "normal" }}>{t.phuong}</td>
-                      <td style={{ color: "#444", fontSize: 13, textAlign: "center", whiteSpace: "normal" }}>Quận {t.quan}</td>
-                      <td>{statusBadge(t.trangThai)}</td>
-                      <td style={{ textAlign: "center" }}>
-                        {t.lat ? (
-                          <span className="status-badge status-healthy" style={{ fontSize: 11, fontWeight: 400 }}>
-                            GPS
-                          </span>
-                        ) : (
-                          <span style={{ color: "#ccc", fontSize: 13 }}>—</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                  {trees.length === 0 && !loading && (
-                    <tr>
-                      <td colSpan={9} style={{ padding: "40px 16px", textAlign: "center", color: "#bbb", fontStyle: "italic" }}>
-                        Không tìm thấy kết quả phù hợp.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Pagination */}
-            <div className="pagination">
-              <div className="pagination-info">
-                Đang xem <strong>{trees.length}</strong> trên {totalCount.toLocaleString()} bản ghi · Trang <strong>{page}</strong> / {totalPages}
-              </div>
-              <div className="pagination-buttons">
-                <button className="pagination-btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
-                  <i className="material-icons" style={{ fontSize: 18 }}>chevron_left</i>
-                </button>
-                {[...Array(Math.min(5, totalPages))].map((_, i) => {
-                  let p = page;
-                  if (page <= 3) p = i + 1;
-                  else if (page >= totalPages - 2) p = totalPages - 4 + i;
-                  else p = page - 2 + i;
-                  if (p < 1 || p > totalPages) return null;
-                  return (
-                    <button key={p} onClick={() => setPage(p)} className={`pagination-btn ${page === p ? "active" : ""}`}>
-                      {p}
-                    </button>
-                  );
-                })}
-                <button className="pagination-btn" disabled={page === totalPages} onClick={() => setPage(p => p + 1)}>
-                  <i className="material-icons" style={{ fontSize: 18 }}>chevron_right</i>
-                </button>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+          </div>
     </div>
   );
 }
