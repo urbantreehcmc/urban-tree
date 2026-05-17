@@ -30,28 +30,17 @@ export default function ExportPatrolPDF({ onClose, onShowAlert }: ExportPatrolPD
     async function loadOptions() {
       const { data } = await supabase.from("trees").select("goi, phuong").not("phuong", "is", null);
       if (data) {
-        const gois = [...new Set(data.map(r => r.goi).filter(Boolean))].sort();
-        const phuongs = [...new Set(data.map(r => r.phuong).filter(Boolean))].sort();
-        setGoiOptions(gois);
-        setPhuongOptions(phuongs);
+        setGoiOptions([...new Set(data.map(r => r.goi).filter(Boolean))].sort());
+        setPhuongOptions([...new Set(data.map(r => r.phuong).filter(Boolean))].sort());
       }
     }
     loadOptions();
   }, []);
 
   function getDaysInMonth(m: number, y: number) { return new Date(y, m, 0).getDate(); }
-  function getDayLabel(date: Date): string {
-    return ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][date.getDay()];
-  }
-  function isWeekend(date: Date): boolean {
-    const d = date.getDay(); return d === 0 || d === 6;
-  }
+  function getDayLabel(date: Date): string { return ["CN", "T2", "T3", "T4", "T5", "T6", "T7"][date.getDay()]; }
 
   async function handleExport() {
-    if (!phuong) {
-      onShowAlert?.({ type: "warning", title: "Thiếu thông tin", message: "Vui lòng chọn Phường/Xã." });
-      return;
-    }
     setExporting(true);
     try {
       if (exportType === "daily") {
@@ -59,11 +48,11 @@ export default function ExportPatrolPDF({ onClose, onShowAlert }: ExportPatrolPD
       } else {
         await exportMonthly();
       }
-      onShowAlert?.({ type: "success", title: "Xuất Excel thành công", message: `File Excel đã được tải xuống.` });
+      onShowAlert?.({ type: "success", title: "Xuất Excel thành công", message: "File đã tải xuống. Mở bằng Google Sheets để xem hình ảnh trong ô." });
       onClose();
     } catch (err: any) {
-      console.error("Lỗi xuất Excel:", err);
-      onShowAlert?.({ type: "error", title: "Lỗi xuất file", message: err.message || "Không thể tạo Excel." });
+      console.error("Lỗi xuất:", err);
+      onShowAlert?.({ type: "error", title: "Lỗi xuất file", message: err.message || "Không thể tạo file." });
     } finally {
       setExporting(false);
     }
@@ -73,49 +62,63 @@ export default function ExportPatrolPDF({ onClose, onShowAlert }: ExportPatrolPD
   async function exportDaily() {
     const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-    // Lấy tree_ids trong phường (+ gói nếu có)
-    let treeQ = supabase.from("trees").select("id, ten_duong, phuong, loai_cay, hieu_so_cay, phan_loai, lat, lng, khu_vuc").eq("phuong", phuong);
-    if (goi) treeQ = treeQ.eq("goi", goi);
-    const { data: trees } = await treeQ;
-    if (!trees || trees.length === 0) throw new Error("Không có cây xanh trong phường đã chọn.");
-
-    const treeMap: Record<string, any> = {};
-    trees.forEach(t => { treeMap[t.id] = t; });
-
-    // Lấy patrol_logs trong ngày
-    const { data: patrols } = await supabase
+    // Lấy patrol_logs trong ngày (KHÔNG lọc phường bắt buộc)
+    let patrolQuery = supabase
       .from("patrol_logs")
-      .select("*")
-      .in("tree_id", Object.keys(treeMap).slice(0, 500))
+      .select("*, trees!inner(loai_cay, hieu_so_cay, ten_duong, phuong, quan, lat, lng, phan_loai, khu_vuc)")
       .gte("created_at", dateStr + "T00:00:00")
       .lte("created_at", dateStr + "T23:59:59")
       .order("created_at", { ascending: true });
 
+    const { data: patrols, error: patrolError } = await patrolQuery;
+    if (patrolError) throw patrolError;
+
+    // Lọc thêm nếu có chọn phường/gói
+    let filtered = patrols || [];
+    if (phuong) filtered = filtered.filter((p: any) => p.trees?.phuong === phuong);
+    if (goi) filtered = filtered.filter((p: any) => p.trees?.goi === goi);
+
+    // Xác định phường hiển thị
+    const displayPhuong = phuong || (filtered.length > 0 ? (filtered[0] as any).trees?.phuong : "Tất cả");
+
     // Header rows
-    const headerRows = [
-      ["ỦY BAN NHÂN DÂN THÀNH PHỐ HỒ CHÍ MINH", "", "", "", "", "", "", "", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"],
-      ["CÔNG TY TNHH MTV CÔNG VIÊN CÂY XANH", "", "", "", "", "", "", "", "", "", "", "Độc lập - Tự do - Hạnh phúc"],
+    const headerRows: any[][] = [
+      ["ỦY BAN NHÂN DÂN THÀNH PHỐ HỒ CHÍ MINH", "", "", "", "", "", "", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"],
+      ["CÔNG TY TNHH MTV CÔNG VIÊN CÂY XANH", "", "", "", "", "", "", "", "", "", "Độc lập - Tự do - Hạnh phúc"],
       [],
       [`BÁO CÁO TUẦN TRA CÂY XANH NGÀY ${day}/${month}/${year}${goi ? ` - GÓI THẦU KHU VỰC ${goi}` : ""}`],
-      [`Cây xanh địa bàn phường ${phuong} - Thành phố Hồ Chí Minh`],
+      [`Cây xanh địa bàn phường ${displayPhuong} - Thành phố Hồ Chí Minh`],
       [],
-      // Table headers
       [
         "STT", "Thời gian", "Vị trí tọa độ", "Địa chỉ",
         "Tuyến đường/CV/MX", "Phường/Xã", "Loài cây", "Nhà số",
         "Phân loại", "Tình trạng, sự việc phát hiện",
-        "Hình ảnh ghi nhận", "Đã xử lý",
+        "Hình ảnh ghi nhận\n(tại thời điểm tuần tra)", "Đã xử lý\n(ảnh sau xử lý)",
         "Nội dung đã xử lý", "Nội dung sẽ xử lý tiếp theo"
       ]
     ];
 
+    // Import mapping
+    const CONDITION_MAP: Record<string, string> = {
+      bong_goc: "Bọng gốc", chet_kho: "Chết khô", re_noi: "Rễ nổi",
+      sam_muc: "Sam mục thân", nga_do: "Ngã đổ", canh_gay: "Cành gãy",
+      don_trai_phep: "Bị đốn trái phép", bi_mat: "Bị mất", ha_thap: "Cần hạ thấp",
+      treo_quang_cao: "Treo quảng cáo/đèn", sau_benh: "Sâu bệnh",
+      cay_nghieng: "Cây nghiêng", nhom_goc: "Nhổm gốc",
+    };
+
     // Data rows
-    const dataRows = (patrols || []).map((p: any, idx: number) => {
-      const tree = treeMap[p.tree_id] || {};
+    const dataRows: any[][] = filtered.map((p: any, idx: number) => {
+      const tree = p.trees || {};
       const time = new Date(p.created_at).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      const coords = p.lat && p.lng ? `${p.lat}, ${p.lng}` : (tree.lat && tree.lng ? `${tree.lat}, ${tree.lng}` : "—");
-      const conditions = (p.tinh_trang || []).join(", ");
-      const images = (p.hinh_anh || []).join("\n");
+      const lat = p.lat || tree.lat;
+      const lng = p.lng || tree.lng;
+      const coords = lat && lng ? `${lat},\n${lng}` : "—";
+      const conditions = (p.tinh_trang || []).map((t: string) => CONDITION_MAP[t] || t).join(", ");
+      
+      // Ảnh chính (phần tử đầu tiên) — dùng =IMAGE() cho Google Sheets
+      const images = p.hinh_anh || [];
+      const mainImage = images.length > 0 && images[0].startsWith("http") ? `=IMAGE("${images[0]}")` : (images[0] || "");
       
       return [
         idx + 1,
@@ -123,97 +126,87 @@ export default function ExportPatrolPDF({ onClose, onShowAlert }: ExportPatrolPD
         coords,
         tree.khu_vuc || "Toàn tuyến",
         tree.ten_duong || "—",
-        tree.phuong || phuong,
+        tree.phuong || "—",
         tree.loai_cay || "—",
         tree.hieu_so_cay || "—",
-        tree.phan_loai || "—",
+        tree.phan_loai || "MT 1,2,3",
         conditions || "Chưa phát hiện sự việc phát sinh hoặc thay đổi hiện trạng của cây xanh",
-        images || "",
-        "",
-        "",
+        mainImage,
+        "", // Ảnh đã xử lý (chưa có)
+        "", // Nội dung đã xử lý
         p.mo_ta || "Tiếp tục theo dõi"
       ];
     });
 
     if (dataRows.length === 0) {
-      // Nếu không có patrol log, tạo 1 dòng trống
-      dataRows.push([1, "—", "—", "—", "—", phuong, "—", "—", "—", "Không có dữ liệu tuần tra trong ngày này", "", "", "", ""]);
+      dataRows.push([1, "—", "—", "—", "—", displayPhuong, "—", "—", "—", "Không có dữ liệu tuần tra trong ngày này", "", "", "", ""]);
     }
 
     const allRows = [...headerRows, ...dataRows];
-
-    // Tạo workbook
     const ws = XLSX.utils.aoa_to_sheet(allRows);
 
-    // Merge cells cho header
+    // Merges
     ws["!merges"] = [
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 4 } },  // UBND
-      { s: { r: 0, c: 11 }, e: { r: 0, c: 13 } }, // CHXHCN
-      { s: { r: 1, c: 0 }, e: { r: 1, c: 4 } },   // Cty
-      { s: { r: 1, c: 11 }, e: { r: 1, c: 13 } },  // Độc lập
-      { s: { r: 3, c: 0 }, e: { r: 3, c: 13 } },  // Title
-      { s: { r: 4, c: 0 }, e: { r: 4, c: 13 } },  // Subtitle
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 5 } },
+      { s: { r: 0, c: 10 }, e: { r: 0, c: 13 } },
+      { s: { r: 1, c: 0 }, e: { r: 1, c: 5 } },
+      { s: { r: 1, c: 10 }, e: { r: 1, c: 13 } },
+      { s: { r: 3, c: 0 }, e: { r: 3, c: 13 } },
+      { s: { r: 4, c: 0 }, e: { r: 4, c: 13 } },
     ];
 
-    // Đặt chiều rộng cột
+    // Column widths
     ws["!cols"] = [
-      { wch: 5 },   // STT
-      { wch: 10 },  // Thời gian
-      { wch: 20 },  // Tọa độ
-      { wch: 12 },  // Địa chỉ
-      { wch: 22 },  // Tuyến đường
-      { wch: 12 },  // Phường
-      { wch: 18 },  // Loài cây
-      { wch: 8 },   // Nhà số
-      { wch: 8 },   // Phân loại
-      { wch: 35 },  // Tình trạng
-      { wch: 20 },  // Hình ảnh ghi nhận
-      { wch: 15 },  // Đã xử lý
-      { wch: 18 },  // Nội dung đã xử lý
-      { wch: 20 },  // Nội dung tiếp theo
+      { wch: 5 }, { wch: 10 }, { wch: 18 }, { wch: 12 },
+      { wch: 22 }, { wch: 12 }, { wch: 20 }, { wch: 8 },
+      { wch: 10 }, { wch: 38 },
+      { wch: 25 }, { wch: 20 }, { wch: 20 }, { wch: 22 },
     ];
+
+    // Row heights cho ảnh (từ dòng 8 trở đi)
+    ws["!rows"] = [];
+    for (let i = 0; i < 7; i++) ws["!rows"].push({});
+    for (let i = 0; i < dataRows.length; i++) ws["!rows"].push({ hpt: 80 });
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `Ngày ${day}-${month}-${year}`);
-    XLSX.writeFile(wb, `TuanTra_${day}_${month}_${year}_${phuong.replace(/\s+/g, "_")}${goi ? `_KV${goi}` : ""}.xlsx`);
+
+    const filename = `TuanTra_${day}_${month}_${year}${phuong ? `_${phuong.replace(/\s+/g, "_")}` : ""}${goi ? `_KV${goi}` : ""}.xlsx`;
+    XLSX.writeFile(wb, filename);
   }
 
-  // ===== XUẤT BÁO CÁO THÁNG (Tổng hợp lưới checkbox) =====
+  // ===== XUẤT TỔNG HỢP THÁNG =====
   async function exportMonthly() {
     const daysInMonth = getDaysInMonth(month, year);
 
-    // Lấy danh sách tuyến đường
-    let treeQ = supabase.from("trees").select("id, ten_duong, phuong").eq("phuong", phuong);
+    // Lấy tuyến đường (không bắt buộc phường)
+    let treeQ = supabase.from("trees").select("id, ten_duong, phuong");
+    if (phuong) treeQ = treeQ.eq("phuong", phuong);
     if (goi) treeQ = treeQ.eq("goi", goi);
     const { data: treeData } = await treeQ;
-    if (!treeData || treeData.length === 0) throw new Error("Không có cây xanh trong phường đã chọn.");
+    if (!treeData || treeData.length === 0) throw new Error("Không có dữ liệu cây xanh phù hợp.");
 
     const streets = [...new Set(treeData.map(r => r.ten_duong).filter(Boolean))].sort();
     const treeMap: Record<string, string> = {};
     treeData.forEach(t => { if (t.ten_duong) treeMap[t.id] = t.ten_duong; });
 
-    // Lấy patrol_logs trong tháng
     const startDate = `${year}-${String(month).padStart(2, "0")}-01`;
     const endDate = `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`;
 
     const { data: patrols } = await supabase
       .from("patrol_logs")
       .select("tree_id, created_at")
-      .in("tree_id", Object.keys(treeMap).slice(0, 500))
+      .in("tree_id", Object.keys(treeMap).slice(0, 1000))
       .gte("created_at", startDate + "T00:00:00")
       .lte("created_at", endDate + "T23:59:59");
 
-    // Ma trận: tuyến đường × ngày
     const matrix: Record<string, Set<number>> = {};
     streets.forEach(s => { matrix[s] = new Set(); });
     (patrols || []).forEach(p => {
       const street = treeMap[p.tree_id];
-      if (street && matrix[street]) {
-        matrix[street].add(new Date(p.created_at).getDate());
-      }
+      if (street && matrix[street]) matrix[street].add(new Date(p.created_at).getDate());
     });
 
-    // Header
     const dayHeaders = [];
     const daySubHeaders = [];
     for (let d = 1; d <= daysInMonth; d++) {
@@ -222,52 +215,48 @@ export default function ExportPatrolPDF({ onClose, onShowAlert }: ExportPatrolPD
       daySubHeaders.push(getDayLabel(date));
     }
 
+    const displayPhuong = phuong || "Tất cả";
     const headerRows = [
       ["ỦY BAN NHÂN DÂN THÀNH PHỐ HỒ CHÍ MINH", "", "", "", "", "", "", "CỘNG HÒA XÃ HỘI CHỦ NGHĨA VIỆT NAM"],
       ["CÔNG TY TNHH MTV CÔNG VIÊN CÂY XANH", "", "", "", "", "", "", "Độc lập - Tự do - Hạnh phúc"],
       [],
       [`BẢNG DIỄN GIẢI KHỐI LƯỢNG TUẦN TRA CÂY XANH THÁNG ${month}/${year}${goi ? ` - GÓI THẦU KHU VỰC ${goi}` : ""}`],
-      [`Cây xanh địa bàn phường ${phuong} - Thành phố Hồ Chí Minh`],
+      [`Cây xanh địa bàn phường ${displayPhuong} - Thành phố Hồ Chí Minh`],
       [],
-      ["STT", "Tuyến đường/CVMX", "Phường/Xã", "KL QL (1000 cây)", ...dayHeaders, "Số lần tuần tra", "KL thực hiện"],
+      ["STT", "Tuyến đường/CVMX", "Phường/Xã", "KL QL\n(1000 cây)", ...dayHeaders, "Số lần\ntuần tra", "KL\nthực hiện"],
       ["", "", "", "", ...daySubHeaders, "", ""],
     ];
 
-    // Data rows
     const dataRows = streets.map((street, idx) => {
       const patrolDays = matrix[street] || new Set();
       const dayCells = [];
-      for (let d = 1; d <= daysInMonth; d++) {
-        dayCells.push(patrolDays.has(d) ? "☑" : "");
-      }
-      return [idx + 1, street, phuong, "-", ...dayCells, patrolDays.size, "-"];
+      for (let d = 1; d <= daysInMonth; d++) dayCells.push(patrolDays.has(d) ? "☑" : "");
+      // Tìm phường của tuyến đường này
+      const streetPhuong = treeData.find(t => t.ten_duong === street)?.phuong || "—";
+      return [idx + 1, street, streetPhuong, "-", ...dayCells, patrolDays.size, "-"];
     });
 
     const allRows = [...headerRows, ...dataRows];
     const ws = XLSX.utils.aoa_to_sheet(allRows);
-
-    // Column widths
-    const colWidths = [
+    ws["!cols"] = [
       { wch: 5 }, { wch: 30 }, { wch: 12 }, { wch: 10 },
       ...Array(daysInMonth).fill({ wch: 5 }),
       { wch: 10 }, { wch: 10 },
     ];
-    ws["!cols"] = colWidths;
 
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, `Tháng ${month}-${year}`);
-    XLSX.writeFile(wb, `TuanTra_Thang${month}_${year}_${phuong.replace(/\s+/g, "_")}${goi ? `_KV${goi}` : ""}.xlsx`);
+    XLSX.writeFile(wb, `TuanTra_Thang${month}_${year}${phuong ? `_${phuong.replace(/\s+/g, "_")}` : ""}${goi ? `_KV${goi}` : ""}.xlsx`);
   }
 
   return (
     <div style={{ overflowY: "auto", maxHeight: "85vh" }}>
-      {/* Header */}
       <div className="modal-header">
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <i className="material-icons" style={{ fontSize: 24, color: "#16a34a" }}>table_chart</i>
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 600, color: "#333" }}>Xuất Báo Cáo Tuần Tra</h2>
-            <p style={{ fontSize: 12, color: "#999" }}>Xuất Excel theo mẫu chuẩn UBND TP.HCM</p>
+            <p style={{ fontSize: 12, color: "#999" }}>Xuất Excel — mở bằng Google Sheets để xem ảnh trong ô</p>
           </div>
         </div>
         <button className="modal-close" onClick={onClose}>×</button>
@@ -279,7 +268,7 @@ export default function ExportPatrolPDF({ onClose, onShowAlert }: ExportPatrolPD
           <label style={{ fontWeight: 600 }}>Loại báo cáo</label>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             {([
-              { id: "daily" as const, label: "Báo cáo Ngày", icon: "today", desc: "Chi tiết từng lần tuần tra" },
+              { id: "daily" as const, label: "Báo cáo Ngày", icon: "today", desc: "Chi tiết từng lần tuần tra + ảnh" },
               { id: "monthly" as const, label: "Tổng hợp Tháng", icon: "date_range", desc: "Lưới checkbox 31 ngày" },
             ]).map(opt => (
               <button key={opt.id} onClick={() => setExportType(opt.id)} style={{
@@ -297,16 +286,8 @@ export default function ExportPatrolPDF({ onClose, onShowAlert }: ExportPatrolPD
           </div>
         </div>
 
-        {/* Bộ lọc */}
+        {/* Thời gian */}
         <div style={{ display: "grid", gridTemplateColumns: exportType === "daily" ? "1fr 1fr 1fr" : "1fr 1fr", gap: 16, marginTop: 16 }}>
-          <div className="form-group">
-            <label style={{ fontWeight: 600 }}>Tháng</label>
-            <select className="form-input" value={month} onChange={e => setMonth(+e.target.value)}>
-              {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => (
-                <option key={m} value={m}>Tháng {m}</option>
-              ))}
-            </select>
-          </div>
           {exportType === "daily" && (
             <div className="form-group">
               <label style={{ fontWeight: 600 }}>Ngày</label>
@@ -318,66 +299,55 @@ export default function ExportPatrolPDF({ onClose, onShowAlert }: ExportPatrolPD
             </div>
           )}
           <div className="form-group">
+            <label style={{ fontWeight: 600 }}>Tháng</label>
+            <select className="form-input" value={month} onChange={e => setMonth(+e.target.value)}>
+              {[1,2,3,4,5,6,7,8,9,10,11,12].map(m => <option key={m} value={m}>Tháng {m}</option>)}
+            </select>
+          </div>
+          <div className="form-group">
             <label style={{ fontWeight: 600 }}>Năm</label>
             <select className="form-input" value={year} onChange={e => setYear(+e.target.value)}>
-              {[2024, 2025, 2026, 2027].map(y => (
-                <option key={y} value={y}>{y}</option>
-              ))}
+              {[2024, 2025, 2026, 2027].map(y => <option key={y} value={y}>{y}</option>)}
             </select>
           </div>
         </div>
 
+        {/* Bộ lọc phụ (TÙY CHỌN) */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           <div className="form-group">
-            <label style={{ fontWeight: 600 }}>Phường / Xã <span style={{ color: "#dc2626" }}>*</span></label>
+            <label style={{ fontWeight: 600 }}>Phường / Xã <span style={{ color: "#999", fontWeight: 400, fontSize: 12 }}>(tùy chọn)</span></label>
             <select className="form-input" value={phuong} onChange={e => setPhuong(e.target.value)}>
-              <option value="">— Chọn phường —</option>
-              {phuongOptions.map(p => (
-                <option key={p} value={p}>{p}</option>
-              ))}
+              <option value="">— Tất cả phường —</option>
+              {phuongOptions.map(p => <option key={p} value={p}>{p}</option>)}
             </select>
           </div>
           <div className="form-group">
-            <label style={{ fontWeight: 600 }}>Gói thầu (Khu vực)</label>
+            <label style={{ fontWeight: 600 }}>Gói thầu <span style={{ color: "#999", fontWeight: 400, fontSize: 12 }}>(tùy chọn)</span></label>
             <select className="form-input" value={goi} onChange={e => setGoi(e.target.value)}>
               <option value="">— Tất cả —</option>
-              {goiOptions.map(g => (
-                <option key={g} value={g}>{g}</option>
-              ))}
+              {goiOptions.map(g => <option key={g} value={g}>{g}</option>)}
             </select>
           </div>
         </div>
 
-        {/* Preview */}
-        <div style={{ 
-          marginTop: 16, padding: 16, background: "#f0fdf4", borderRadius: 8, 
-          border: "1px solid #bbf7d0", display: "flex", alignItems: "flex-start", gap: 12 
+        {/* Hướng dẫn */}
+        <div style={{
+          marginTop: 12, padding: 14, background: "#fefce8", borderRadius: 8,
+          border: "1px solid #fde68a", display: "flex", gap: 10,
         }}>
-          <i className="material-icons" style={{ fontSize: 20, color: "#16a34a", marginTop: 2 }}>info</i>
-          <div style={{ fontSize: 13, color: "#14532d", lineHeight: 1.6 }}>
-            <strong>Định dạng:</strong> Excel (.xlsx) — mở được trên Google Sheets, LibreOffice, Excel<br/>
-            <strong>Mẫu:</strong> {exportType === "daily" 
-              ? `Báo cáo tuần tra ngày ${day}/${month}/${year} — chi tiết tọa độ, loài cây, tình trạng` 
-              : `Tổng hợp tháng ${month}/${year} — lưới ${getDaysInMonth(month, year)} ngày × N tuyến đường`
-            }<br/>
-            <strong>Dữ liệu:</strong> Tự động từ patrol_logs trong hệ thống
+          <i className="material-icons" style={{ fontSize: 20, color: "#ca8a04", marginTop: 2 }}>tips_and_updates</i>
+          <div style={{ fontSize: 12, color: "#713f12", lineHeight: 1.7 }}>
+            <strong>Mẹo:</strong> Sau khi tải file .xlsx, hãy mở bằng <strong>Google Sheets</strong> (Upload lên Google Drive → Open with Google Sheets). 
+            Hình ảnh tuần tra sẽ tự động hiển thị trong ô nhờ công thức <code>=IMAGE()</code>.<br/>
+            Nếu mở bằng Excel desktop, cột hình ảnh sẽ hiển thị URL thay vì ảnh.
           </div>
         </div>
       </div>
 
-      {/* Footer */}
       <div className="modal-footer">
         <button className="btn-secondary" onClick={onClose}>Hủy</button>
-        <button 
-          className="btn-primary" 
-          onClick={handleExport} 
-          disabled={exporting || !phuong}
-          style={{ 
-            background: "#16a34a", 
-            display: "flex", alignItems: "center", gap: 8,
-            opacity: !phuong ? 0.5 : 1,
-          }}
-        >
+        <button className="btn-primary" onClick={handleExport} disabled={exporting}
+          style={{ background: "#16a34a", display: "flex", alignItems: "center", gap: 8 }}>
           <i className="material-icons" style={{ fontSize: 18 }}>file_download</i>
           {exporting ? "Đang xuất..." : "Xuất Excel (.xlsx)"}
         </button>

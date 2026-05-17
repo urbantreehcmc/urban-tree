@@ -23,7 +23,6 @@ const ALL_CONDITIONS: FieldCondition[] = [
   "cay_nghieng", "nhom_goc",
 ];
 
-const MAX_IMAGES = 5;
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, lng, onClose, onSuccess }: Props) {
@@ -34,49 +33,54 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   
-  // Image upload state
-  const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Ảnh chính (1 ảnh — hiển thị trong báo cáo tuần tra)
+  const [mainImage, setMainImage] = useState<{ file: File; preview: string } | null>(null);
+  // Ảnh phụ (tối đa 4 ảnh — đính kèm phiếu đề xuất)
+  const [subImages, setSubImages] = useState<{ file: File; preview: string }[]>([]);
+  const [uploadProgress, setUploadProgress] = useState("");
+  
+  const mainInputRef = useRef<HTMLInputElement>(null);
+  const subInputRef = useRef<HTMLInputElement>(null);
 
   const toggleCondition = (c: FieldCondition) => {
     setConditions(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    const remaining = MAX_IMAGES - images.length;
-    
-    if (remaining <= 0) {
-      setError(`Tối đa ${MAX_IMAGES} hình ảnh.`);
-      return;
-    }
+  function validateFile(file: File): string | null {
+    if (file.size > MAX_FILE_SIZE) return `"${file.name}" quá lớn (tối đa 5MB).`;
+    if (!file.type.startsWith("image/")) return `"${file.name}" không phải hình ảnh.`;
+    return null;
+  }
 
-    const validFiles = files.slice(0, remaining).filter(f => {
-      if (f.size > MAX_FILE_SIZE) {
-        setError(`File "${f.name}" quá lớn (tối đa 5MB).`);
-        return false;
-      }
-      if (!f.type.startsWith("image/")) {
-        setError(`File "${f.name}" không phải hình ảnh.`);
-        return false;
-      }
-      return true;
-    });
-
-    const newImages = validFiles.map(file => ({
-      file,
-      preview: URL.createObjectURL(file),
-    }));
-    
-    setImages(prev => [...prev, ...newImages]);
+  const handleMainImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const err = validateFile(file);
+    if (err) { setError(err); return; }
+    if (mainImage) URL.revokeObjectURL(mainImage.preview);
+    setMainImage({ file, preview: URL.createObjectURL(file) });
     setError("");
-    // Reset input
-    if (fileInputRef.current) fileInputRef.current.value = "";
+    if (mainInputRef.current) mainInputRef.current.value = "";
   };
 
-  const removeImage = (idx: number) => {
-    setImages(prev => {
+  const handleSubImages = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const remaining = 4 - subImages.length;
+    if (remaining <= 0) { setError("Tối đa 4 ảnh phụ."); return; }
+    
+    const valid = files.slice(0, remaining).filter(f => {
+      const err = validateFile(f);
+      if (err) { setError(err); return false; }
+      return true;
+    });
+    
+    setSubImages(prev => [...prev, ...valid.map(f => ({ file: f, preview: URL.createObjectURL(f) }))]);
+    setError("");
+    if (subInputRef.current) subInputRef.current.value = "";
+  };
+
+  const removeSubImage = (idx: number) => {
+    setSubImages(prev => {
       const updated = [...prev];
       URL.revokeObjectURL(updated[idx].preview);
       updated.splice(idx, 1);
@@ -84,34 +88,35 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
     });
   };
 
-  async function uploadImages(): Promise<string[]> {
-    if (images.length === 0) return [];
+  async function uploadAllImages(): Promise<string[]> {
+    const allFiles: File[] = [];
+    if (mainImage) allFiles.push(mainImage.file);
+    subImages.forEach(img => allFiles.push(img.file));
     
-    setUploading(true);
+    if (allFiles.length === 0) return [];
+
     const urls: string[] = [];
     
-    try {
-      for (const img of images) {
-        const ext = img.file.name.split(".").pop() || "jpg";
-        const fileName = `patrol/${treeId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
-        
-        const { data, error: uploadError } = await supabase.storage
-          .from("patrol-images")
-          .upload(fileName, img.file, { cacheControl: "3600", upsert: false });
-        
-        if (uploadError) {
-          console.error("Upload error:", uploadError);
-          // Fallback: lưu tên file nếu không upload được
-          urls.push(`[Chưa upload] ${img.file.name}`);
-        } else {
-          const { data: urlData } = supabase.storage.from("patrol-images").getPublicUrl(data.path);
-          urls.push(urlData.publicUrl);
-        }
+    for (let i = 0; i < allFiles.length; i++) {
+      const file = allFiles[i];
+      setUploadProgress(`Đang tải ảnh ${i + 1}/${allFiles.length}...`);
+      const ext = file.name.split(".").pop() || "jpg";
+      const fileName = `patrol/${treeId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+      
+      const { data, error: uploadErr } = await supabase.storage
+        .from("patrol-images")
+        .upload(fileName, file, { cacheControl: "3600", upsert: false });
+      
+      if (uploadErr) {
+        console.warn("Upload error (sẽ lưu tên file):", uploadErr.message);
+        urls.push(`[local] ${file.name}`);
+      } else {
+        const { data: urlData } = supabase.storage.from("patrol-images").getPublicUrl(data.path);
+        urls.push(urlData.publicUrl);
       }
-    } finally {
-      setUploading(false);
     }
     
+    setUploadProgress("");
     return urls;
   }
 
@@ -123,8 +128,7 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
     setSaving(true);
     setError("");
     try {
-      // Upload images first
-      const imageUrls = await uploadImages();
+      const imageUrls = await uploadAllImages();
       
       const { error: dbError } = await supabase.from("patrol_logs").insert({
         tree_id: treeId,
@@ -142,12 +146,12 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
       setError(e.message || "Lỗi khi lưu dữ liệu.");
     } finally {
       setSaving(false);
+      setUploadProgress("");
     }
   };
 
   return (
     <div style={{ overflowY: "auto", maxHeight: "85vh" }}>
-      {/* Header */}
       <div className="modal-header">
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
           <i className="material-icons" style={{ fontSize: 24, color: "#2563eb" }}>directions_walk</i>
@@ -207,60 +211,60 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
           </div>
         </div>
 
-        {/* Hình ảnh hiện trường */}
+        {/* ẢNH CHÍNH — 1 ảnh, hiển thị trong báo cáo tuần tra */}
         <div className="form-group">
-          <label style={{ fontWeight: 600 }}>
-            Hình ảnh hiện trường
-            <span style={{ color: "#999", fontWeight: 400 }}> (tối đa {MAX_IMAGES} ảnh, mỗi ảnh ≤ 5MB)</span>
+          <label style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            <i className="material-icons" style={{ fontSize: 18, color: "#2563eb" }}>photo_camera</i>
+            Ảnh chính
+            <span style={{ color: "#999", fontWeight: 400, fontSize: 12 }}>— hiển thị trong Báo cáo tuần tra</span>
           </label>
-          
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
-            {/* Preview ảnh đã chọn */}
-            {images.map((img, idx) => (
-              <div key={idx} style={{
-                width: 100, height: 100, borderRadius: 8, overflow: "hidden",
-                position: "relative", border: "2px solid #e0e0e0",
-              }}>
-                <img src={img.preview} alt={`Ảnh ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-                <button
-                  onClick={() => removeImage(idx)}
-                  style={{
-                    position: "absolute", top: 2, right: 2, width: 22, height: 22,
-                    borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)",
-                    color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 14, lineHeight: 1,
-                  }}
-                >×</button>
+          <div style={{ display: "flex", gap: 10, marginTop: 10, alignItems: "flex-start" }}>
+            {mainImage ? (
+              <div style={{ width: 120, height: 120, borderRadius: 8, overflow: "hidden", position: "relative", border: "3px solid #2563eb" }}>
+                <img src={mainImage.preview} alt="Ảnh chính" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <button onClick={() => { URL.revokeObjectURL(mainImage.preview); setMainImage(null); }}
+                  style={{ position: "absolute", top: 4, right: 4, width: 24, height: 24, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.7)", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, lineHeight: 1 }}>×</button>
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, background: "rgba(37,99,235,0.9)", color: "white", fontSize: 9, textAlign: "center", padding: "2px 0", fontWeight: 600 }}>ẢNH CHÍNH</div>
               </div>
-            ))}
-            
-            {/* Nút thêm ảnh */}
-            {images.length < MAX_IMAGES && (
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                style={{
-                  width: 100, height: 100, borderRadius: 8, border: "2px dashed #bbb",
-                  background: "#fafafa", cursor: "pointer", display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center", gap: 4, color: "#999",
-                  transition: "all 0.2s", fontFamily: "inherit",
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "#bbb"; e.currentTarget.style.color = "#999"; }}
-              >
-                <i className="material-icons" style={{ fontSize: 28 }}>add_a_photo</i>
-                <span style={{ fontSize: 10, fontWeight: 500 }}>Thêm ảnh</span>
+            ) : (
+              <button onClick={() => mainInputRef.current?.click()} style={{
+                width: 120, height: 120, borderRadius: 8, border: "3px dashed #2563eb", background: "#eff6ff",
+                cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, color: "#2563eb", fontFamily: "inherit",
+              }}>
+                <i className="material-icons" style={{ fontSize: 32 }}>add_a_photo</i>
+                <span style={{ fontSize: 11, fontWeight: 600 }}>Chọn ảnh chính</span>
               </button>
             )}
           </div>
-          
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleImageSelect}
-            style={{ display: "none" }}
-          />
+          <input ref={mainInputRef} type="file" accept="image/*" onChange={handleMainImage} style={{ display: "none" }} />
+        </div>
+
+        {/* ẢNH PHỤ — tối đa 4 ảnh, đính kèm phiếu đề xuất */}
+        <div className="form-group">
+          <label style={{ fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
+            <i className="material-icons" style={{ fontSize: 18, color: "#7c3aed" }}>collections</i>
+            Ảnh phụ
+            <span style={{ color: "#999", fontWeight: 400, fontSize: 12 }}>— đính kèm Phiếu đề xuất (tối đa 4)</span>
+          </label>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+            {subImages.map((img, idx) => (
+              <div key={idx} style={{ width: 90, height: 90, borderRadius: 8, overflow: "hidden", position: "relative", border: "2px solid #7c3aed" }}>
+                <img src={img.preview} alt={`Ảnh phụ ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <button onClick={() => removeSubImage(idx)}
+                  style={{ position: "absolute", top: 2, right: 2, width: 20, height: 20, borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)", color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, lineHeight: 1 }}>×</button>
+              </div>
+            ))}
+            {subImages.length < 4 && (
+              <button onClick={() => subInputRef.current?.click()} style={{
+                width: 90, height: 90, borderRadius: 8, border: "2px dashed #c4b5fd", background: "#faf5ff",
+                cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2, color: "#7c3aed", fontFamily: "inherit",
+              }}>
+                <i className="material-icons" style={{ fontSize: 24 }}>add_photo_alternate</i>
+                <span style={{ fontSize: 9, fontWeight: 500 }}>Thêm ảnh phụ</span>
+              </button>
+            )}
+          </div>
+          <input ref={subInputRef} type="file" accept="image/*" multiple onChange={handleSubImages} style={{ display: "none" }} />
         </div>
 
         {/* Mô tả */}
@@ -281,9 +285,9 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
       {/* Footer */}
       <div className="modal-footer">
         <button className="btn-secondary" onClick={onClose}>Hủy</button>
-        <button className="btn-primary" onClick={handleSubmit} disabled={saving || uploading}>
+        <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
           <i className="material-icons" style={{ fontSize: 16 }}>save</i>
-          {uploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : "Ghi nhận sự cố"}
+          {uploadProgress || (saving ? "Đang lưu..." : "Ghi nhận sự cố")}
         </button>
       </div>
     </div>
