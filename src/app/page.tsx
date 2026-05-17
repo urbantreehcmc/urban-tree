@@ -279,7 +279,7 @@ export default function Home() {
       {/* === BODY: SIDEBAR + CONTENT === */}
       <div className="app-container">
         {/* Sidebar */}
-        {session && userProfile?.status === 'active' && (
+        {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && (
           <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""} ${mobileMenuOpen ? "mobile-open" : ""}`}>
             <Sidebar
               activeTab={activeTab}
@@ -326,17 +326,17 @@ export default function Home() {
                 defaultSpatialOpen={activeTab === "spatial"}
               />
             )}
-            {session && userProfile?.status === 'active' && activeTab === "dashboard" && <Dashboard />}
-            {session && userProfile?.status === 'active' && activeTab === "trees" && <TreeTable onManageTree={setSelectedTreeId} />}
-            {session && userProfile?.status === 'active' && activeTab === "parks" && <ParkManager showMode="parks" />}
-            {session && userProfile?.status === 'active' && activeTab === "greenAreas" && <ParkManager showMode="greenAreas" />}
-            {session && userProfile?.status === 'active' && activeTab === "patrol" && <TaskManager key="patrol" showMode="patrol" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
-            {session && userProfile?.status === 'active' && activeTab === "tasks" && <TaskManager key={taskRefreshKey} showMode="tickets" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
-            {session && userProfile?.status === 'active' && activeTab === "species" && <SpeciesManagement />}
-            {session && userProfile?.status === 'active' && activeTab === "wards" && <WardTable />}
-            {session && userProfile?.status === 'active' && activeTab === "contracts" && <ContractManager />}
-            {session && userProfile?.status === 'active' && activeTab === "contractors" && <ContractorManager />}
-            {session && userProfile?.status === 'active' && activeTab === "users" && <UserManager />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "dashboard" && <Dashboard />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "trees" && <TreeTable onManageTree={setSelectedTreeId} />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "parks" && <ParkManager showMode="parks" />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "greenAreas" && <ParkManager showMode="greenAreas" />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "patrol" && <TaskManager key="patrol" showMode="patrol" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "tasks" && <TaskManager key={taskRefreshKey} showMode="tickets" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "species" && <SpeciesManagement />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "wards" && <WardTable />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "contracts" && <ContractManager />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "contractors" && <ContractorManager />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "users" && <UserManager />}
           </div>
         </main>
       </div>
