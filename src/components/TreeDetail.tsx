@@ -29,11 +29,36 @@ export default function TreeDetail({ tree, onBack, onCreatePatrol }: TreeDetailP
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleSave = async () => {
-    // Mock save logic - in real app, update Supabase here
-    console.log("Saving tree data:", formData);
-    setIsEditing(false);
-    // You could call an onSave callback here if provided
+    setIsSaving(true);
+    try {
+      const { error } = await supabase
+        .from('trees')
+        .update({
+          lat: formData.lat,
+          lng: formData.lng,
+          dia_chi: formData.diaChi,
+          ten_duong: formData.tenDuong,
+          phuong: formData.phuong,
+          quan: formData.quan?.toString(),
+          khu_vuc: formData.kv,
+          le: formData.le,
+        })
+        .eq('id', tree.id);
+
+      if (error) throw error;
+      
+      setIsEditing(false);
+      window.dispatchEvent(new CustomEvent('FORCE_REFRESH_TREES'));
+      alert('Đã cập nhật dữ liệu thành công!');
+    } catch (err: any) {
+      console.error(err);
+      alert('Lỗi khi lưu dữ liệu: ' + err.message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const TABS = [
@@ -182,13 +207,19 @@ export default function TreeDetail({ tree, onBack, onCreatePatrol }: TreeDetailP
               padding: "8px 16px", 
               background: isEditing ? "#2563eb" : "white", 
               color: isEditing ? "white" : "#64748b", 
-              borderColor: isEditing ? "#2563eb" : "#e2e8f0" 
+              borderColor: isEditing ? "#2563eb" : "#e2e8f0",
+              opacity: isSaving ? 0.7 : 1
             }} 
             onClick={isEditing ? handleSave : () => setIsEditing(true)}
+            disabled={isSaving}
             title="Chỉnh sửa thông tin"
           >
-            <i className="material-icons" style={{ fontSize: 20 }}>{isEditing ? "check" : "edit"}</i>
-            <span style={{ marginLeft: 4 }}>{isEditing ? "Lưu lại" : "Chỉnh sửa"}</span>
+            <i className="material-icons" style={{ fontSize: 20 }}>
+              {isSaving ? "sync" : isEditing ? "check" : "edit"}
+            </i>
+            <span style={{ marginLeft: 4 }}>
+              {isSaving ? "Đang lưu..." : isEditing ? "Lưu lại" : "Chỉnh sửa"}
+            </span>
           </button>
 
           <div style={{ width: 1, height: 24, background: "#e2e8f0", margin: "0 4px" }}></div>

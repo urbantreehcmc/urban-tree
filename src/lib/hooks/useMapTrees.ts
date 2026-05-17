@@ -25,6 +25,13 @@ export function useMapTrees(bounds: ViewportBounds | null, zoom: number) {
 
   const [trees, setTrees] = useState<TreeRecord[]>([]);
   const [loading, setLoading] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const handleRefresh = () => setRefreshKey(prev => prev + 1);
+    window.addEventListener('FORCE_REFRESH_TREES', handleRefresh);
+    return () => window.removeEventListener('FORCE_REFRESH_TREES', handleRefresh);
+  }, []);
 
   useEffect(() => {
     // Chỉ tải cây riêng lẻ khi zoom đủ sâu (ví dụ zoom >= 13)
@@ -90,7 +97,7 @@ export function useMapTrees(bounds: ViewportBounds | null, zoom: number) {
     // Debounce để tránh spam request khi đang kéo map liên tục
     const timer = setTimeout(fetchTreesInViewport, 300);
     return () => clearTimeout(timer);
-  }, [bounds?.north, bounds?.south, bounds?.east, bounds?.west, zoom]);
+  }, [bounds?.north, bounds?.south, bounds?.east, bounds?.west, zoom, refreshKey]);
 
   return { trees, loading };
 }
