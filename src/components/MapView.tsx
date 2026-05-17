@@ -23,6 +23,7 @@ import { useMapTrees } from "@/lib/hooks/useMapTrees";
 import StreetViewPanel from "@/components/StreetViewPanel";
 import { supabase } from "@/lib/supabase";
 import { useWards } from "@/lib/hooks/useWards";
+import Notification from "@/components/Notification";
 
 interface MapViewProps {
   trees?: TreeRecord[];
@@ -512,10 +513,11 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
   const [isLayersOpen, setIsLayersOpen] = useState(false);
+  const [notification, setNotification] = useState<{isOpen: boolean, type: "success" | "error" | "warning" | "info", title: string, message: string} | null>(null);
 
   const handleGeolocate = useCallback(() => {
     if (!navigator.geolocation) {
-      alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
+      setNotification({ isOpen: true, type: "warning", title: "Không hỗ trợ", message: "Trình duyệt của bạn không hỗ trợ định vị GPS." });
       return;
     }
 
@@ -541,7 +543,7 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
         if (error.code === 1) {
           errorMsg = "Vui lòng cấp quyền truy cập vị trí (GPS) trên trình duyệt của bạn.";
         }
-        alert(errorMsg);
+        setNotification({ isOpen: true, type: "error", title: "Lỗi GPS", message: errorMsg });
       },
       {
         enableHighAccuracy: true,
@@ -1120,7 +1122,7 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
                           });
                           setPopupInfo(null);
                         } else {
-                          alert("Cây này chưa có ID hợp lệ để di chuyển.");
+                          setNotification({ isOpen: true, type: "warning", title: "Không thể di dời", message: "Cây này chưa có ID hợp lệ để di chuyển." });
                         }
                       }}
                       className="flex items-center justify-start gap-3 p-2.5 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-700 hover:bg-emerald-100 transition-all group"
@@ -1274,11 +1276,11 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
                     
                   if (error) throw error;
                   
-                  alert("Đã lưu vị trí cây thành công!");
+                  setNotification({ isOpen: true, type: "success", title: "Lưu thành công", message: "Đã lưu vị trí cây thành công!" });
                   setEditingTree(null);
                 } catch (err: any) {
                   console.error("Lỗi cập nhật vị trí:", err);
-                  alert("Lỗi khi lưu vị trí: " + (err.message || "Không xác định"));
+                  setNotification({ isOpen: true, type: "error", title: "Lỗi hệ thống", message: "Lỗi khi lưu vị trí: " + (err.message || "Không xác định") });
                 } finally {
                   setIsSavingLocation(false);
                 }
@@ -1431,6 +1433,17 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
         </div>
       )}
       
+      {/* Notification Modal */}
+      {notification && (
+        <Notification
+          isOpen={notification.isOpen}
+          type={notification.type}
+          title={notification.title}
+          message={notification.message}
+          onConfirm={() => setNotification(null)}
+          confirmText="Đóng"
+        />
+      )}
       </div>
     </div>
   );

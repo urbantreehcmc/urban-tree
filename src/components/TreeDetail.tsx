@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { TreeRecord } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
 import proj4 from "proj4";
+import Notification from "@/components/Notification";
 
 // Cấu hình hệ tọa độ VN2000 múi chiếu 3 độ, kinh tuyến trục 105.75 (Hồ Chí Minh)
 const VN2000_HCM = '+proj=tmerc +lat_0=0 +lon_0=105.75 +k=0.9999 +x_0=500000 +y_0=0 +ellps=WGS84 +towgs84=-191.90441429,-39.30318279,-111.45032835,0.00928836,-0.01975479,0.00427372,0.252906278 +units=m +no_defs';
@@ -20,6 +21,7 @@ export default function TreeDetail({ tree, onBack, onCreatePatrol }: TreeDetailP
   const [showRawData, setShowRawData] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState(tree);
+  const [notification, setNotification] = useState<{isOpen: boolean, type: "success" | "error" | "warning" | "info", title: string, message: string} | null>(null);
 
   useEffect(() => {
     setFormData(tree);
@@ -52,10 +54,20 @@ export default function TreeDetail({ tree, onBack, onCreatePatrol }: TreeDetailP
       
       setIsEditing(false);
       window.dispatchEvent(new CustomEvent('FORCE_REFRESH_TREES'));
-      alert('Đã cập nhật dữ liệu thành công!');
+      setNotification({
+        isOpen: true,
+        type: "success",
+        title: "Lưu thành công",
+        message: "Đã cập nhật dữ liệu vị trí và thông tin cây xanh!"
+      });
     } catch (err: any) {
       console.error(err);
-      alert('Lỗi khi lưu dữ liệu: ' + err.message);
+      setNotification({
+        isOpen: true,
+        type: "error",
+        title: "Lỗi lưu dữ liệu",
+        message: err.message || "Không thể kết nối đến máy chủ"
+      });
     } finally {
       setIsSaving(false);
     }
@@ -407,10 +419,10 @@ export default function TreeDetail({ tree, onBack, onCreatePatrol }: TreeDetailP
                                        handleInputChange("lat", position.coords.latitude);
                                        handleInputChange("lng", position.coords.longitude);
                                      }, (err) => {
-                                       alert("Không thể lấy vị trí GPS: " + err.message);
+                                       setNotification({ isOpen: true, type: "error", title: "Lỗi GPS", message: "Không thể lấy vị trí: " + err.message });
                                      }, { enableHighAccuracy: true });
                                    } else {
-                                     alert("Trình duyệt không hỗ trợ định vị GPS.");
+                                     setNotification({ isOpen: true, type: "warning", title: "Không hỗ trợ", message: "Trình duyệt không hỗ trợ định vị GPS." });
                                    }
                                  }}
                                  title="Lấy vị trí GPS hiện tại"
@@ -610,6 +622,17 @@ export default function TreeDetail({ tree, onBack, onCreatePatrol }: TreeDetailP
         .json-code::-webkit-scrollbar { width: 4px; }
         .json-code::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
       `}</style>
+      {/* Notification Modal */}
+      {notification && (
+        <Notification
+          isOpen={notification.isOpen}
+          type={notification.type}
+          title={notification.title}
+          message={notification.message}
+          onConfirm={() => setNotification(null)}
+          confirmText="Đóng"
+        />
+      )}
     </div>
   );
 }
