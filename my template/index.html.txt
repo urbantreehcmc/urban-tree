@@ -1,0 +1,712 @@
+<!-- Index.html -->
+<!DOCTYPE html>
+<html>
+
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <?!= include('CSS'); ?>
+</head>
+
+<body>
+  <!-- Loader -->
+  <div id="loader" class="loader">
+    <div class="loader-spinner"></div>
+  </div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-left">
+      <button id="menuToggle" class="menu-toggle">
+          <i class="material-icons">menu</i>
+        </button>
+      <div class="app-title">
+        <i class="material-icons main-icon">description</i>
+        <h1>QUẢN LÝ TÀI LIỆU, VĂN BẢN</h1>
+      </div>
+    </div>
+      <div class="header-right">
+        <div class="search-box">
+          <i class="material-icons">search</i>
+          <input type="text" id="searchInput" placeholder="Tìm kiếm văn bản...">
+        </div>
+        <div class="user-menu-container">
+          <button id="userMenuBtn" class="user-menu-btn">
+            <i class="material-icons">account_circle</i>
+            <span id="currentUsername">Username</span>
+            <i class="material-icons">arrow_drop_down</i>
+          </button>
+          <div id="userMenu" class="user-menu">
+            <div class="user-menu-header">
+              <div class="user-avatar">
+                <i class="material-icons">account_circle</i>
+              </div>
+              <div class="user-info">
+                <div id="menuUsername" class="menu-username">Username</div>
+                <div id="userRole" class="user-role">Admin</div>
+              </div>
+            </div>
+            <div class="user-menu-items">
+              <a href="#" id="manageUsersBtn" class="menu-item admin-only">
+                <i class="material-icons">people</i>
+                <span>Quản lý người dùng</span>
+              </a>
+              <a href="#" id="logoutBtn" class="menu-item">
+                <i class="material-icons">logout</i>
+                <span>Đăng xuất</span>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+  </header>
+
+  <!-- Main Content -->
+  <div class="container">
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <h3>Danh mục</h3>
+      </div>
+      <nav class="sidebar-nav">
+        <ul id="categories">
+          <li class="active" data-category="all">
+            <i class="material-icons">folder</i>
+            <span>Tất cả văn bản</span>
+            <span class="badge" id="allCount">0</span>
+          </li>
+          <!-- Categories will be loaded dynamically -->
+          <li id="categoriesLoading" class="loading-placeholder">
+            <div class="loading-bar"></div>
+          </li>
+        </ul>
+      </nav>
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-header">
+        <h3>Cấu hình</h3>
+      </div>
+      <nav class="sidebar-nav">
+        <ul id="config-menu">
+          <li id="config-categories" data-config="categories">
+            <i class="material-icons">category</i>
+            <span>Quản lý danh mục</span>
+          </li>
+          <li id="config-departments" data-config="departments">
+            <i class="material-icons">business</i>
+            <span>Quản lý phòng ban</span>
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="content">
+      <div class="content-header">
+        <div class="breadcrumb">
+          <span>Thư viện</span>
+          <i class="material-icons">chevron_right</i>
+          <span id="currentCategory">Tất cả văn bản</span>
+        </div>
+        <div class="view-options">
+          <button id="uploadBtn" class="upload-btn-header">
+            <i class="material-icons">add</i>
+            <span>Thêm văn bản mới</span>
+          </button>
+          <div class="filter-dropdown">
+            <button class="filter-btn">
+              <i class="material-icons">filter_list</i>
+              <span>Bộ lọc</span>
+            </button>
+            <div class="filter-content">
+              <div class="filter-group">
+                <label>Phòng ban:</label>
+                <select id="departmentFilter">
+                  <option value="">Tất cả</option>
+                  <!-- Departments will be loaded dynamically -->
+                </select>
+              </div>
+              <div class="filter-group">
+                <label>Sắp xếp theo:</label>
+                <select id="sortFilter">
+                  <option value="date_desc">Ngày tạo (Mới nhất)</option>
+                  <option value="date_asc">Ngày tạo (Cũ nhất)</option>
+                  <option value="title_asc">Tên (A-Z)</option>
+                  <option value="title_desc">Tên (Z-A)</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="view-toggle">
+            <button class="view-btn active" data-view="grid">
+              <i class="material-icons">grid_view</i>
+            </button>
+            <button class="view-btn" data-view="list">
+              <i class="material-icons">view_list</i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Documents Grid View (Default) -->
+      <div id="documentsGrid" class="documents-grid">
+        <!-- Document grid loading placeholder -->
+        <div id="gridLoading" class="loading-grid">
+          <?for(let i=0; i<8; i++) {?>
+          <div class="card-loading-placeholder">
+            <div class="header-placeholder"></div>
+            <div class="body-placeholder">
+              <div class="title-placeholder"></div>
+              <div class="meta-placeholder"></div>
+              <div class="department-placeholder"></div>
+            </div>
+            <div class="actions-placeholder"></div>
+          </div>
+          <?}?>
+        </div>
+        <!-- Documents will be loaded here -->
+      </div>
+
+      <!-- Documents List View (Hidden by default) -->
+      <div id="documentsList" class="documents-list hide">
+        <table>
+          <thead>
+            <tr>
+              <th>Tên văn bản</th>
+              <th>Danh mục</th>
+              <th>Phòng ban</th>
+              <th>Ngày ban hành</th>
+              <th>Ngày hiệu lực</th>
+              <th>Tác vụ</th>
+            </tr>
+          </thead>
+          <tbody id="documentsListBody">
+            <!-- List loading placeholder -->
+            <tr id="listLoading" class="list-loading-placeholder">
+              <?for(let i=0; i<8; i++) {?>
+            <tr>
+              <td>
+                <div class="loading-bar"></div>
+              </td>
+              <td>
+                <div class="loading-bar"></div>
+              </td>
+              <td>
+                <div class="loading-bar"></div>
+              </td>
+              <td>
+                <div class="loading-bar"></div>
+              </td>
+              <td>
+                <div class="loading-bar"></div>
+              </td>
+              <td>
+                <div class="loading-bar"></div>
+              </td>
+            </tr>
+            <?}?>
+            </tr>
+            <!-- Documents will be loaded here -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div id="emptyState" class="empty-state hide">
+        <img src="https://img.icons8.com/fluency/96/000000/empty-box.png" alt="No documents">
+        <h3>Không tìm thấy văn bản</h3>
+        <p>Không có văn bản nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
+        <button id="resetFilterBtn" class="btn-primary">Xóa bộ lọc</button>
+      </div>
+    </main>
+  </div>
+
+  <!-- Upload Modal -->
+  <div id="uploadModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Thêm văn bản mới</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="uploadForm" name="uploadForm" enctype="multipart/form-data">
+          <div class="form-group">
+            <label for="docTitle">Tên văn bản: <span class="required">*</span></label>
+            <input type="text" id="docTitle" name="docTitle" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="docCategory">Danh mục: <span class="required">*</span></label>
+              <select id="docCategory" name="docCategory" required>
+                <option value="">-- Chọn danh mục --</option>
+                <!-- Categories will be loaded dynamically -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="docDepartment">Phòng ban: <span class="required">*</span></label>
+              <select id="docDepartment" name="docDepartment" required>
+                <option value="">-- Chọn phòng ban --</option>
+                <!-- Departments will be loaded dynamically -->
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="docIssueDate">Ngày ban hành: <span class="required">*</span></label>
+              <input type="date" id="docIssueDate" name="docIssueDate" required>
+            </div>
+            <div class="form-group">
+              <label for="docEffectiveDate">Ngày hiệu lực: <span class="required">*</span></label>
+              <input type="date" id="docEffectiveDate" name="docEffectiveDate" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="docFile">Tệp tin: <span class="required">*</span></label>
+            <div class="file-upload">
+              <input type="file" id="docFile" name="docFile" required>
+              <label for="docFile" class="file-label">
+                <i class="material-icons">cloud_upload</i>
+                <span>Chọn tệp</span>
+              </label>
+              <div id="fileName" class="file-name"></div>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="docDescription">Mô tả:</label>
+            <textarea id="docDescription" name="docDescription" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary cancel-modal">Hủy</button>
+        <button type="button" class="btn-primary" id="saveDocBtn">Lưu văn bản</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Document Preview Modal -->
+  <div id="previewModal" class="modal">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h2 id="previewTitle">Xem chi tiết văn bản</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="preview-details">
+          <div class="preview-info">
+            <div class="preview-header">
+              <div class="file-icon">
+                <i class="material-icons" id="previewIcon">description</i>
+              </div>
+              <div class="file-info">
+                <h3 id="previewFileName">Tên văn bản.pdf</h3>
+                <div class="file-meta">
+                  <div class="meta-row">
+                    <div class="meta-item"><span class="meta-label">Danh mục:</span> <span id="previewFileCategory">Văn bản nội bộ</span></div>
+                    <div class="meta-item"><span class="meta-label">Phòng ban:</span> <span id="previewFileDepartment">Nhân sự</span></div>
+                  </div>
+                  <div class="meta-row">
+                    <div class="meta-item"><span class="meta-label">Ngày ban hành:</span> <span id="previewFileDate">15/04/2025</span></div>
+                    <div class="meta-item"><span class="meta-label">Ngày hiệu lực:</span> <span id="previewFileEffectiveDate">20/04/2025</span></div>
+                  </div>
+                  <div class="meta-row">
+                    <div class="meta-item"><span class="meta-label">Mô tả:</span> <span id="previewDescription" class="inline-description">Mô tả chi tiết về văn bản này sẽ được hiển thị ở đây.</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="meta-row">
+              <div class="meta-item"><span class="meta-label">Kích thước:</span> <span id="previewFileSize">1.2 MB</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="preview-content">
+          <div id="previewPlaceholder" class="preview-placeholder">
+            <img src="https://img.icons8.com/fluency/96/000000/pdf.png" id="previewImage" alt="Preview">
+            <p>Đang tải xem trước...</p>
+          </div>
+          <iframe id="previewFrame" style="width: 100%; height: 100%; border: none; display: none;"></iframe>
+        </div>
+        <div class="preview-actions-horizontal">
+          <button class="btn-primary btn-sm" id="downloadBtn">
+            <i class="material-icons">download</i>
+            <span>Tải xuống</span>
+          </button>
+          <button class="btn-secondary btn-sm" id="shareBtn">
+            <i class="material-icons">share</i>
+            <span>Chia sẻ</span>
+          </button>
+          <button class="btn-info btn-sm" id="editBtn">
+            <i class="material-icons">edit</i>
+            <span>Chỉnh sửa</span>
+          </button>
+          <button class="btn-danger btn-sm" id="deleteBtn">
+            <i class="material-icons">delete</i>
+            <span>Xóa</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Document Modal -->
+  <div id="editModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Chỉnh sửa văn bản</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="editForm" name="editForm">
+          <div class="form-group">
+            <label for="editTitle">Tên văn bản: <span class="required">*</span></label>
+            <input type="text" id="editTitle" name="editTitle" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editCategory">Danh mục: <span class="required">*</span></label>
+              <select id="editCategory" name="editCategory" required>
+                <option value="">-- Chọn danh mục --</option>
+                <!-- Categories will be loaded dynamically -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="editDepartment">Phòng ban: <span class="required">*</span></label>
+              <select id="editDepartment" name="editDepartment" required>
+                <option value="">-- Chọn phòng ban --</option>
+                <!-- Departments will be loaded dynamically -->
+              </select>
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="editIssueDate">Ngày ban hành: <span class="required">*</span></label>
+              <input type="date" id="editIssueDate" name="editIssueDate" required>
+            </div>
+            <div class="form-group">
+              <label for="editEffectiveDate">Ngày hiệu lực: <span class="required">*</span></label>
+              <input type="date" id="editEffectiveDate" name="editEffectiveDate" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="editDescription">Mô tả:</label>
+            <textarea id="editDescription" name="editDescription" rows="3"></textarea>
+          </div>
+          
+          <input type="hidden" id="editDocId" name="editDocId">
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary cancel-modal">Hủy</button>
+        <button type="button" class="btn-primary" id="saveEditBtn">Lưu thay đổi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Share Modal -->
+  <div id="shareModal" class="modal">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <h2>Chia sẻ văn bản</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>Sao chép đường dẫn dưới đây để chia sẻ:</p>
+        <div class="share-link-container">
+          <input type="text" id="shareLink" readonly>
+          <button id="copyLinkBtn" class="btn-secondary">
+              <i class="material-icons">content_copy</i>
+            </button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-primary close-modal">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confirmation Modal -->
+  <div id="confirmModal" class="modal">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <h2>Xác nhận</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmMessage">Bạn có chắc chắn muốn xóa văn bản này?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary cancel-modal">Hủy</button>
+        <button type="button" class="btn-danger" id="confirmBtn">Xác nhận</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para gestionar categorías -->
+  <div id="categoryModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Quản lý danh mục</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="management-actions">
+          <button id="addCategoryBtn" class="btn-primary btn-sm">
+            <i class="material-icons">add</i> Thêm danh mục
+          </button>
+        </div>
+        
+        <div class="management-list">
+          <table class="config-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Tên danh mục</th>
+                <th>Icon</th>
+                <th>Màu sắc</th>
+                <th>Tác vụ</th>
+              </tr>
+            </thead>
+            <tbody id="categoriesList">
+              <!-- Categorías se cargarán dinámicamente aquí -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para gestionar departamentos -->
+  <div id="departmentModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Quản lý phòng ban</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="management-actions">
+          <button id="addDepartmentBtn" class="btn-primary btn-sm">
+            <i class="material-icons">add</i> Thêm phòng ban
+          </button>
+        </div>
+        
+        <div class="management-list">
+          <table class="config-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Tên phòng ban</th>
+                <th>Mô tả</th>
+                <th>Tác vụ</th>
+              </tr>
+            </thead>
+            <tbody id="departmentsList">
+              <!-- Departamentos se cargarán dinámicamente aquí -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para agregar/editar categoría -->
+  <div id="editCategoryModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="categoryModalTitle">Thêm danh mục</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="categoryForm">
+          <input type="hidden" id="categoryId" value="">
+          
+          <div class="form-group">
+            <label for="categoryName">Tên danh mục: <span class="required">*</span></label>
+            <input type="text" id="categoryName" required>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="categoryIcon">Icon:</label>
+              <select id="categoryIcon">
+                <option value="folder">folder</option>
+                <option value="description">description</option>
+                <option value="article">article</option>
+                <option value="people">people</option>
+                <option value="gavel">gavel</option>
+                <option value="bar_chart">bar_chart</option>
+                <option value="campaign">campaign</option>
+                <option value="event_note">event_note</option>
+                <option value="work">work</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="categoryColor">Màu sắc:</label>
+              <input type="color" id="categoryColor" value="#4285F4">
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label for="categoryDescription">Mô tả:</label>
+            <textarea id="categoryDescription" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary cancel-modal">Hủy</button>
+        <button type="button" class="btn-primary" id="saveCategoryBtn">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para agregar/editar departamento -->
+  <div id="editDepartmentModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="departmentModalTitle">Thêm phòng ban</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="departmentForm">
+          <input type="hidden" id="departmentId" value="">
+          
+          <div class="form-group">
+            <label for="departmentName">Tên phòng ban: <span class="required">*</span></label>
+            <input type="text" id="departmentName" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="departmentDescription">Mô tả:</label>
+            <textarea id="departmentDescription" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary cancel-modal">Hủy</button>
+        <button type="button" class="btn-primary" id="saveDepartmentBtn">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal de confirmación para eliminar -->
+  <div id="deleteConfirmModal" class="modal">
+    <div class="modal-content modal-sm">
+      <div class="modal-header">
+        <h2>Xác nhận xóa</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p id="deleteConfirmMessage">Bạn có chắc chắn muốn xóa mục này?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary cancel-modal">Hủy</button>
+        <button type="button" class="btn-danger" id="confirmDeleteBtn">Xóa</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para gestionar usuarios -->
+  <div id="userManagementModal" class="modal">
+    <div class="modal-content modal-lg">
+      <div class="modal-header">
+        <h2>Quản lý người dùng</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="management-actions">
+          <button id="addUserBtn" class="btn-primary btn-sm">
+            <i class="material-icons">person_add</i> Thêm người dùng
+          </button>
+        </div>
+        
+        <div class="management-list">
+          <table class="config-table">
+            <thead>
+              <tr>
+                <th>STT</th>
+                <th>Tên đăng nhập</th>
+                <th>Email</th>
+                <th>Quyền</th>
+                <th>Trạng thái</th>
+                <th>Đăng nhập cuối</th>
+                <th>Tác vụ</th>
+              </tr>
+            </thead>
+            <tbody id="usersList">
+              <!-- Users will be loaded dynamically -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal para agregar/editar usuario -->
+  <div id="editUserModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2 id="userModalTitle">Thêm người dùng</h2>
+        <button class="close-modal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="userForm">
+          <input type="hidden" id="userId" value="">
+          
+          <div class="form-group">
+            <label for="userUsername">Tên đăng nhập: <span class="required">*</span></label>
+            <input type="text" id="userUsername" required>
+          </div>
+          
+          <div class="form-group">
+            <label for="userPassword">Mật khẩu: <span id="passwordRequiredMark" class="required">*</span></label>
+            <div class="password-input-container" style="position: relative;">
+              <input type="password" id="userPassword" style="width: 100%;">
+              <i class="material-icons toggle-password" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #777;">visibility_off</i>
+            </div>
+            <span id="passwordHelpText" class="help-text">Để trống nếu không muốn thay đổi mật khẩu</span>
+          </div>
+          
+          <div class="form-group">
+            <label for="userEmail">Email:</label>
+            <input type="email" id="userEmail">
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label for="userRole">Quyền: <span class="required">*</span></label>
+              <select id="userRole" required>
+                <option value="user">Người dùng</option>
+                <option value="admin">Quản trị viên</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="userStatus">Trạng thái: <span class="required">*</span></label>
+              <select id="userStatus" required>
+                <option value="active">Hoạt động</option>
+                <option value="inactive">Vô hiệu hóa</option>
+              </select>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary cancel-modal">Hủy</button>
+        <button type="button" class="btn-primary" id="saveUserBtn">Lưu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <?!= include('JavaScript'); ?>
+</body>
+
+</html>

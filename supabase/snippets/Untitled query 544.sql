@@ -1,0 +1,5 @@
+ALTER TABLE public.tree_locations DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tree_assets DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tree_growth_logs DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tree_management DISABLE ROW LEVEL SECURITY;
+ALTER TABLE public.tree_maintenance_logs DISABLE ROW LEVEL SECURITY;
