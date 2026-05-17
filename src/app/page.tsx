@@ -4,6 +4,10 @@ import { useState, useRef, useEffect } from "react";
 import dynamic from "next/dynamic";
 
 import Sidebar from "@/components/Sidebar";
+import LoginModal from "@/components/LoginModal";
+import ChangePasswordModal from "@/components/ChangePasswordModal";
+import { supabase } from "@/lib/supabase";
+import { Session } from "@supabase/supabase-js";
 import Dashboard from "@/components/Dashboard";
 import TreeTable from "@/components/TreeTable";
 import ParkManager from "@/components/ParkManager";
@@ -68,6 +72,11 @@ const TAB_ICONS: Record<string, string> = {
 export default function Home() {
   const [activeTab, setActiveTab] = useState("map");
   const [selectedTreeId, setSelectedTreeId] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [userProfile, setUserProfile] = useState<{ id: string; name: string; role: string; status: string; email: string } | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [authInitialized, setAuthInitialized] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -95,6 +104,37 @@ export default function Home() {
 
   const { stats } = useDashboardStats();
   const { tree: fetchedTree } = useTreeById(selectedTreeId !== "NEW" ? selectedTreeId : null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session) fetchUserProfile(session.user.id);
+      else setAuthInitialized(true);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) fetchUserProfile(session.user.id);
+      else {
+        setUserProfile(null);
+        setActiveTab("map");
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const fetchUserProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from("user_profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+    if (data) setUserProfile(data);
+    setAuthInitialized(true);
+  };
 
   const NEW_TREE_TEMPLATE = {
     id: "",
@@ -187,38 +227,51 @@ export default function Home() {
           </div>
 
           <div className="user-menu-container" ref={userMenuRef}>
-            <button className="user-menu-btn" onClick={() => setUserMenuOpen(!userMenuOpen)}>
-              <i className="material-icons">account_circle</i>
-              <span>Admin</span>
-              <i className="material-icons" style={{ fontSize: 18, marginLeft: 4 }}>arrow_drop_down</i>
-            </button>
-            <div className={`user-menu-dropdown ${userMenuOpen ? "show" : ""}`}>
-              <div style={{ padding: 16, borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 4, background: "#e8eeff", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563eb" }}>
+            {session && userProfile ? (
+              <>
+                <button className="user-menu-btn" onClick={() => setUserMenuOpen(!userMenuOpen)}>
                   <i className="material-icons">account_circle</i>
-                </div>
-                <div>
-                  <div style={{ fontWeight: 500, color: "#333" }}>Admin</div>
-                  <div style={{ fontSize: 12, color: "#999" }}>Quản trị viên</div>
-                </div>
-              </div>
-              <div style={{ padding: "8px 0" }}>
-                <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", border: "none", background: "none", cursor: "pointer", color: "#555", fontSize: 14, fontFamily: "inherit", transition: "background 0.15s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-                >
-                  <i className="material-icons" style={{ fontSize: 20 }}>settings</i>
-                  Cài đặt
+                  <span>{userProfile.name}</span>
+                  <i className="material-icons" style={{ fontSize: 18, marginLeft: 4 }}>arrow_drop_down</i>
                 </button>
-                <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", border: "none", background: "none", cursor: "pointer", color: "#555", fontSize: 14, fontFamily: "inherit", transition: "background 0.15s" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
-                >
-                  <i className="material-icons" style={{ fontSize: 20 }}>logout</i>
-                  Đăng xuất
-                </button>
-              </div>
-            </div>
+                <div className={`user-menu-dropdown ${userMenuOpen ? "show" : ""}`}>
+                  <div style={{ padding: 16, borderBottom: "1px solid #eee", display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 40, height: 40, borderRadius: 4, background: "#e8eeff", display: "flex", alignItems: "center", justifyContent: "center", color: "#2563eb" }}>
+                      <i className="material-icons">account_circle</i>
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 500, color: "#333" }}>{userProfile.name}</div>
+                      <div style={{ fontSize: 12, color: "#999" }}>
+                        {userProfile.role === 'admin' ? 'Quản trị viên' : userProfile.role === 'investor' ? 'Chủ đầu tư' : userProfile.role === 'supervisor' ? 'Giám sát' : userProfile.role === 'contractor' ? 'Nhà thầu' : 'Kỹ thuật'}
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ padding: "8px 0" }}>
+                    <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", border: "none", background: "none", cursor: "pointer", color: "#555", fontSize: 14, fontFamily: "inherit", transition: "background 0.15s" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                      onClick={() => { setShowChangePassword(true); setUserMenuOpen(false); }}
+                    >
+                      <i className="material-icons" style={{ fontSize: 20 }}>settings</i>
+                      Đổi mật khẩu
+                    </button>
+                    <button style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", border: "none", background: "none", cursor: "pointer", color: "#555", fontSize: 14, fontFamily: "inherit", transition: "background 0.15s" }}
+                      onMouseEnter={(e) => (e.currentTarget.style.background = "#f5f5f5")}
+                      onMouseLeave={(e) => (e.currentTarget.style.background = "none")}
+                      onClick={() => supabase.auth.signOut()}
+                    >
+                      <i className="material-icons" style={{ fontSize: 20 }}>logout</i>
+                      Đăng xuất
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <button className="user-menu-btn" onClick={() => setShowLoginModal(true)}>
+                <i className="material-icons">login</i>
+                <span>Đăng nhập</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -226,14 +279,16 @@ export default function Home() {
       {/* === BODY: SIDEBAR + CONTENT === */}
       <div className="app-container">
         {/* Sidebar */}
-        <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""} ${mobileMenuOpen ? "mobile-open" : ""}`}>
-          <Sidebar
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            collapsed={sidebarCollapsed}
-            stats={stats}
-          />
-        </aside>
+        {session && userProfile?.status === 'active' && (
+          <aside className={`sidebar ${sidebarCollapsed ? "collapsed" : ""} ${mobileMenuOpen ? "mobile-open" : ""}`}>
+            <Sidebar
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              collapsed={sidebarCollapsed}
+              stats={stats}
+            />
+          </aside>
+        )}
 
         {/* Main Content */}
         <main className="main-content">
@@ -250,28 +305,55 @@ export default function Home() {
           </div>
 
           {/* Module Content */}
-          <div style={{ height: (activeTab === "map" || activeTab === "spatial") ? "calc(100vh - 60px - 53px)" : "auto", minHeight: (activeTab === "map" || activeTab === "spatial") ? undefined : "calc(100vh - 60px - 53px)" }}>
-            {(activeTab === "map" || activeTab === "spatial") && (
+          <div style={{ height: (activeTab === "map" || activeTab === "spatial") ? "calc(100vh - 60px - 53px)" : "auto", minHeight: (activeTab === "map" || activeTab === "spatial") ? undefined : "calc(100vh - 60px - 53px)", position: "relative" }}>
+            
+            {session && userProfile?.status === 'pending' && (
+              <div className="absolute inset-0 z-50 bg-white/60 backdrop-blur-md flex flex-col items-center justify-center text-center p-6 animate-fade-in">
+                <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mb-4 shadow-sm">
+                  <i className="material-icons text-3xl">hourglass_empty</i>
+                </div>
+                <h3 className="text-xl font-bold text-[#333] mb-2">Tài khoản đang chờ phê duyệt</h3>
+                <p className="text-sm text-[#666] max-w-sm">
+                  Xin chào <strong>{userProfile.name}</strong>, tài khoản của bạn đã được đăng ký thành công và đang chờ Quản trị viên phê duyệt để truy cập đầy đủ tính năng. Trong lúc chờ, bạn vẫn có thể xem Bản đồ GIS.
+                </p>
+              </div>
+            )}
+
+            {(activeTab === "map" || activeTab === "spatial" || (!session) || (userProfile?.status === 'pending')) && (
               <MapView 
                 onManageTree={setSelectedTreeId} 
                 onCreatePatrol={(info) => setPatrolTarget({ ...info, lat: info.lat ?? null, lng: info.lng ?? null })} 
                 defaultSpatialOpen={activeTab === "spatial"}
               />
             )}
-            {activeTab === "dashboard" && <Dashboard />}
-            {activeTab === "trees" && <TreeTable onManageTree={setSelectedTreeId} />}
-            {activeTab === "parks" && <ParkManager showMode="parks" />}
-            {activeTab === "greenAreas" && <ParkManager showMode="greenAreas" />}
-            {activeTab === "patrol" && <TaskManager key="patrol" showMode="patrol" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
-            {activeTab === "tasks" && <TaskManager key={taskRefreshKey} showMode="tickets" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
-            {activeTab === "species" && <SpeciesManagement />}
-            {activeTab === "wards" && <WardTable />}
-            {activeTab === "contracts" && <ContractManager />}
-            {activeTab === "contractors" && <ContractorManager />}
-            {activeTab === "users" && <UserManager />}
+            {session && userProfile?.status === 'active' && activeTab === "dashboard" && <Dashboard />}
+            {session && userProfile?.status === 'active' && activeTab === "trees" && <TreeTable onManageTree={setSelectedTreeId} />}
+            {session && userProfile?.status === 'active' && activeTab === "parks" && <ParkManager showMode="parks" />}
+            {session && userProfile?.status === 'active' && activeTab === "greenAreas" && <ParkManager showMode="greenAreas" />}
+            {session && userProfile?.status === 'active' && activeTab === "patrol" && <TaskManager key="patrol" showMode="patrol" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
+            {session && userProfile?.status === 'active' && activeTab === "tasks" && <TaskManager key={taskRefreshKey} showMode="tickets" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
+            {session && userProfile?.status === 'active' && activeTab === "species" && <SpeciesManagement />}
+            {session && userProfile?.status === 'active' && activeTab === "wards" && <WardTable />}
+            {session && userProfile?.status === 'active' && activeTab === "contracts" && <ContractManager />}
+            {session && userProfile?.status === 'active' && activeTab === "contractors" && <ContractorManager />}
+            {session && userProfile?.status === 'active' && activeTab === "users" && <UserManager />}
           </div>
         </main>
       </div>
+
+      {showLoginModal && (
+        <LoginModal 
+          onClose={() => setShowLoginModal(false)} 
+          onSuccess={() => setShowLoginModal(false)}
+        />
+      )}
+
+      {showChangePassword && (
+        <ChangePasswordModal 
+          onClose={() => setShowChangePassword(false)} 
+          onSuccess={() => setShowChangePassword(false)}
+        />
+      )}
 
       {/* === TREE DETAIL MODAL === */}
       {selectedTreeId && selectedTree && (

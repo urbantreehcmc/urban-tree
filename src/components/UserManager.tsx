@@ -1,16 +1,39 @@
-﻿"use client";
+"use client";
 
 import type { UserRecord } from "@/lib/types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function UserManager() {
   const [currentUserRole, setCurrentUserRole] = useState<string>("admin");
   const [searchQuery, setSearchQuery] = useState("");
+  const [users, setUsers] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const allUsers: UserRecord[] = [];
-  const filteredUsers = allUsers.filter(u =>
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    setLoading(true);
+    const { data, error } = await supabase.from('user_profiles').select('*').order('created_at', { ascending: false });
+    if (data) setUsers(data);
+    setLoading(false);
+  };
+
+  const updateUserStatus = async (id: string, status: string) => {
+    const { error } = await supabase.from('user_profiles').update({ status }).eq('id', id);
+    if (!error) fetchUsers();
+  };
+
+  const updateUserRole = async (id: string, role: string) => {
+    const { error } = await supabase.from('user_profiles').update({ role }).eq('id', id);
+    if (!error) fetchUsers();
+  };
+
+  const filteredUsers = users.filter(u =>
+    u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const roleColors: Record<string, string> = {
@@ -77,19 +100,44 @@ export default function UserManager() {
                     </div>
                   </td>
                   <td className="px-5 py-3">
-                    <span className={`px-2 py-0.5 text-[11px] font-medium rounded border ${roleColors[user.role]}`}>{roleLabels[user.role]}</span>
-                    <p className="text-xs text-[#999] mt-1">{user.organization}</p>
+                    <select 
+                      value={user.role} 
+                      onChange={(e) => updateUserRole(user.id, e.target.value)}
+                      className={`px-2 py-1 text-[11px] font-medium rounded border focus:outline-none ${roleColors[user.role] || "bg-gray-100 text-gray-600"}`}
+                    >
+                      <option value="worker">Kỹ thuật</option>
+                      <option value="contractor">Nhà thầu</option>
+                      <option value="supervisor">Giám sát</option>
+                      <option value="investor">Chủ đầu tư</option>
+                      <option value="admin">Quản trị</option>
+                    </select>
+                    <p className="text-xs text-[#999] mt-1">{user.organization || 'Chưa cập nhật'}</p>
                   </td>
-                  <td className="px-5 py-3"><span className="text-sm text-[#666]">{user.area}</span></td>
+                  <td className="px-5 py-3"><span className="text-sm text-[#666]">{user.area || 'Toàn hệ thống'}</span></td>
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-1.5">
-                      <div className={`w-1.5 h-1.5 rounded-full ${user.status === "active" ? "bg-[#22c55e]" : "bg-[#999]"}`} />
-                      <span className="text-sm">{user.status === "active" ? "Hoạt động" : "Äã khóa"}</span>
+                      <div className={`w-1.5 h-1.5 rounded-full ${user.status === "active" ? "bg-[#22c55e]" : user.status === "pending" ? "bg-amber-500" : "bg-[#999]"}`} />
+                      <span className="text-sm font-medium" style={{ color: user.status === "active" ? "#22c55e" : user.status === "pending" ? "#f59e0b" : "#999" }}>
+                        {user.status === "active" ? "Hoạt động" : user.status === "pending" ? "Chờ duyệt" : "Đã khóa"}
+                      </span>
                     </div>
                   </td>
                   <td className="px-5 py-3 text-right">
-                    <button className="p-1.5 text-[#999] hover:text-[#2563eb] transition-colors" title="Sửa"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" /></svg></button>
-                    <button className="p-1.5 text-[#999] hover:text-red-400 transition-colors" title="Xóa"><svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>
+                    {user.status === 'pending' && (
+                      <button onClick={() => updateUserStatus(user.id, 'active')} className="px-3 py-1 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded text-xs font-bold mr-2 transition-colors">
+                        Phê duyệt
+                      </button>
+                    )}
+                    {user.status === 'active' && (
+                      <button onClick={() => updateUserStatus(user.id, 'locked')} className="p-1.5 text-[#999] hover:text-red-400 transition-colors" title='Khóa tài khoản'>
+                        <i className="material-icons text-[18px]">lock</i>
+                      </button>
+                    )}
+                    {user.status === 'locked' && (
+                      <button onClick={() => updateUserStatus(user.id, 'active')} className="p-1.5 text-[#999] hover:text-[#22c55e] transition-colors" title='Mở khóa'>
+                        <i className="material-icons text-[18px]">lock_open</i>
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}
