@@ -39,7 +39,8 @@ const TAB_LABELS: Record<string, string> = {
   trees: "Cây xanh",
   parks: "Công viên",
   greenAreas: "Mảng xanh",
-  tasks: "Phiếu đề xuất & Sự cố",
+  patrol: "Tuần tra",
+  tasks: "Sự cố",
   spatial: "Phân tích GIS",
   species: "Loài cây",
   wards: "Phường xã",
@@ -54,6 +55,7 @@ const TAB_ICONS: Record<string, string> = {
   trees: "park",
   parks: "nature",
   greenAreas: "forest",
+  patrol: "directions_walk",
   tasks: "assignment",
   spatial: "layers",
   species: "potted_plant",
@@ -260,7 +262,8 @@ export default function Home() {
             {activeTab === "trees" && <TreeTable onManageTree={setSelectedTreeId} />}
             {activeTab === "parks" && <ParkManager showMode="parks" />}
             {activeTab === "greenAreas" && <ParkManager showMode="greenAreas" />}
-            {activeTab === "tasks" && <TaskManager key={taskRefreshKey} onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
+            {activeTab === "patrol" && <TaskManager key="patrol" showMode="patrol" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
+            {activeTab === "tasks" && <TaskManager key={taskRefreshKey} showMode="tickets" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
             {activeTab === "species" && <SpeciesManagement />}
             {activeTab === "wards" && <WardTable />}
             {activeTab === "contracts" && <ContractManager />}

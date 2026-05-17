@@ -17,6 +17,7 @@ interface TaskManagerProps {
     confirmText?: string;
     showCancel?: boolean;
   }) => void;
+  showMode?: "all" | "patrol" | "tickets";
 }
 
 type WorkflowTab = "patrol" | "de_xuat" | "phe_duyet" | "xu_ly" | "hoan_cong";
@@ -29,14 +30,20 @@ const WORKFLOW_TABS: { id: WorkflowTab; label: string; icon: string; color: stri
   { id: "hoan_cong", label: "Hoàn công",       icon: "task_alt",        color: "#16a34a", statuses: ["hoan_thanh"] },
 ];
 
-export default function TaskManager({ onOpenTicket, onShowAlert }: TaskManagerProps) {
-  const [activeTab, setActiveTab] = useState<WorkflowTab>("patrol");
+export default function TaskManager({ onOpenTicket, onShowAlert, showMode = "all" }: TaskManagerProps) {
+  const [activeTab, setActiveTab] = useState<WorkflowTab>(showMode === "tickets" ? "de_xuat" : "patrol");
   const [patrols, setPatrols] = useState<PatrolLog[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [counts, setCounts] = useState<Record<WorkflowTab, number>>({
     patrol: 0, de_xuat: 0, phe_duyet: 0, xu_ly: 0, hoan_cong: 0,
+  });
+
+  const visibleTabs = WORKFLOW_TABS.filter(tab => {
+    if (showMode === "patrol") return tab.id === "patrol";
+    if (showMode === "tickets") return tab.id !== "patrol";
+    return true;
   });
 
   useEffect(() => { fetchData(); }, [activeTab]);
@@ -140,58 +147,64 @@ export default function TaskManager({ onOpenTicket, onShowAlert }: TaskManagerPr
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#333" }}>Quản lý Sự cố & Xử lý</h2>
-            <p style={{ fontSize: 13, color: "#999", marginTop: 2 }}>Quy trình 5 bước: Tuần tra → Phiếu đề xuất → Phê duyệt → Xử lý → Hoàn công</p>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#333" }}>
+              {showMode === "patrol" ? "Nhật ký Tuần tra & Ghi nhận" : showMode === "tickets" ? "Quy trình Xử lý Sự cố" : "Quản lý Sự cố & Xử lý"}
+            </h2>
+            <p style={{ fontSize: 13, color: "#999", marginTop: 2 }}>
+              {showMode === "patrol" ? "Danh sách nhật ký sự cố cây xanh ghi nhận trong quá trình tuần tra thực địa" : showMode === "tickets" ? "Quy trình 4 bước: Phiếu đề xuất → Phê duyệt → Xử lý → Hoàn công" : "Quy trình 5 bước: Tuần tra → Phiếu đề xuất → Phê duyệt → Xử lý → Hoàn công"}
+            </p>
           </div>
           <button className="btn-primary" onClick={() => { fetchData(); fetchCounts(); }}>
             <i className="material-icons" style={{ fontSize: 18 }}>refresh</i> Làm mới
           </button>
         </div>
 
-        {/* === 5-Tab Workflow Bar === */}
-        <div style={{ display: "flex", background: "white", borderRadius: 12, padding: 6, border: "1px solid #e0e0e0", gap: 4, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
-          {WORKFLOW_TABS.map((tab, idx) => {
-            const isActive = activeTab === tab.id;
-            const count = counts[tab.id];
-            return (
-              <button
-                key={tab.id}
-                onClick={() => { setActiveTab(tab.id); setSearch(""); }}
-                style={{
-                  flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  gap: 4, padding: "12px 8px", borderRadius: 8, border: "none", cursor: "pointer",
-                  fontFamily: "inherit", transition: "all 0.2s",
-                  background: isActive ? tab.color : "transparent",
-                  color: isActive ? "white" : "#666",
-                  position: "relative",
-                }}
-              >
-                {/* Step connector arrow */}
-                {idx < WORKFLOW_TABS.length - 1 && (
-                  <div style={{
-                    position: "absolute", right: -6, top: "50%",
-                    width: 12, height: 12, zIndex: 2,
-                    borderTop: "2px solid #ddd", borderRight: "2px solid #ddd",
-                    transform: "translateY(-50%) rotate(45deg)",
-                  }} />
-                )}
-                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <i className="material-icons" style={{ fontSize: 18 }}>{tab.icon}</i>
-                  <span style={{ fontSize: 13, fontWeight: 600 }}>{tab.label}</span>
-                </div>
-                {count > 0 && (
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 10,
-                    background: isActive ? "rgba(255,255,255,0.3)" : tab.color,
-                    color: isActive ? "white" : "white",
-                  }}>
-                    {count}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+        {/* === Workflow Bar (Chỉ hiển thị khi có nhiều hơn 1 tab) === */}
+        {visibleTabs.length > 1 && (
+          <div style={{ display: "flex", background: "white", borderRadius: 12, padding: 6, border: "1px solid #e0e0e0", gap: 4, boxShadow: "0 1px 3px rgba(0,0,0,0.06)" }}>
+            {visibleTabs.map((tab, idx) => {
+              const isActive = activeTab === tab.id;
+              const count = counts[tab.id];
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => { setActiveTab(tab.id); setSearch(""); }}
+                  style={{
+                    flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                    gap: 4, padding: "12px 8px", borderRadius: 8, border: "none", cursor: "pointer",
+                    fontFamily: "inherit", transition: "all 0.2s",
+                    background: isActive ? tab.color : "transparent",
+                    color: isActive ? "white" : "#666",
+                    position: "relative",
+                  }}
+                >
+                  {/* Step connector arrow */}
+                  {idx < visibleTabs.length - 1 && (
+                    <div style={{
+                      position: "absolute", right: -6, top: "50%",
+                      width: 12, height: 12, zIndex: 2,
+                      borderTop: "2px solid #ddd", borderRight: "2px solid #ddd",
+                      transform: "translateY(-50%) rotate(45deg)",
+                    }} />
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <i className="material-icons" style={{ fontSize: 18 }}>{tab.icon}</i>
+                    <span style={{ fontSize: 13, fontWeight: 600 }}>{tab.label}</span>
+                  </div>
+                  {count > 0 && (
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: "1px 7px", borderRadius: 10,
+                      background: isActive ? "rgba(255,255,255,0.3)" : tab.color,
+                      color: isActive ? "white" : "white",
+                    }}>
+                      {count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* === CONTENT === */}
         {loading ? (

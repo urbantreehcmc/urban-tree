@@ -19,7 +19,8 @@ const TAB_LABELS: Record<string, string> = {
   trees: "Cây xanh",
   parks: "Công viên",
   greenAreas: "Mảng xanh",
-  tasks: "Phiếu đề xuất & Sự cố",
+  patrol: "Tuần tra",
+  tasks: "Sự cố",
   spatial: "Phân tích GIS",
   species: "Loài cây",
   wards: "Phường xã",
@@ -34,6 +35,7 @@ const MAIN_NAV = [
   { id: "trees", label: TAB_LABELS.trees, icon: "park" },
   { id: "parks", label: TAB_LABELS.parks, icon: "nature" },
   { id: "greenAreas", label: TAB_LABELS.greenAreas, icon: "forest" },
+  { id: "patrol", label: TAB_LABELS.patrol, icon: "directions_walk" },
   { id: "tasks", label: TAB_LABELS.tasks, icon: "assignment" },
   { id: "spatial", label: TAB_LABELS.spatial, icon: "layers" },
 ];
