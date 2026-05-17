@@ -478,6 +478,47 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
   const [streetViewCoord, setStreetViewCoord] = useState<{lat: number, lng: number} | null>(null);
   const [streetViewMode, setStreetViewMode] = useState<'inactive' | 'selecting'>('inactive');
 
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleGeolocate = useCallback(() => {
+    if (!navigator.geolocation) {
+      alert("Trình duyệt của bạn không hỗ trợ định vị GPS.");
+      return;
+    }
+
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        setUserLocation({ lat: latitude, lng: longitude });
+        setIsLocating(false);
+
+        if (mapRef.current) {
+          mapRef.current.easeTo({
+            center: [longitude, latitude],
+            zoom: 16,
+            duration: 1500
+          });
+        }
+      },
+      (error) => {
+        setIsLocating(false);
+        console.error("Lỗi định vị:", error);
+        let errorMsg = "Không thể lấy vị trí hiện tại.";
+        if (error.code === 1) {
+          errorMsg = "Vui lòng cấp quyền truy cập vị trí (GPS) trên trình duyệt của bạn.";
+        }
+        alert(errorMsg);
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0,
+      }
+    );
+  }, []);
+
   const handleViewportChange = useCallback(() => {
     try {
       const map = mapRef.current?.getMap();
@@ -1116,10 +1157,47 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
             <div className="text-4xl filter drop-shadow-xl cursor-grab active:cursor-grabbing animate-bounce">ðŸ“</div>
           </Marker>
         )}
+        {/* User Location Marker */}
+        {userLocation && (
+          <Marker
+            longitude={userLocation.lng}
+            latitude={userLocation.lat}
+            anchor="center"
+          >
+            <div className="relative flex items-center justify-center">
+              <div className="absolute w-8 h-8 rounded-full bg-blue-500/30 animate-ping"></div>
+              <div className="absolute w-5 h-5 rounded-full bg-white border-2 border-blue-500 flex items-center justify-center shadow-lg">
+                <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
+              </div>
+            </div>
+          </Marker>
+        )}
       </Map>
 
-      {/* Nút bật/tắt Chế đá»™ Street View */}
+      {/* Nút bật/tắt Chế đá»™ Street View và Định vị */}
       <div className="absolute top-[72px] right-14 z-10 flex flex-col gap-2">
+        {/* Nút định vị vị trí hiện tại */}
+        <button
+          onClick={handleGeolocate}
+          disabled={isLocating}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border backdrop-blur-md shadow-lg transition-all font-bold text-sm bg-white hover:bg-slate-50 text-slate-800 border-slate-200"
+          title="Định vị vị trí của tôi"
+        >
+          <div className="w-5 h-5 flex items-center justify-center shrink-0">
+            {isLocating ? (
+              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5">
+                <circle cx="12" cy="12" r="7" />
+                <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+                <circle cx="12" cy="12" r="3" fill="#2563eb" className="animate-pulse" />
+              </svg>
+            )}
+          </div>
+          {isLocating ? 'Đang định vị...' : 'Định vị của tôi'}
+        </button>
+
+        {/* Nút bật/tắt Chế đá»™ Street View */}
         <button
           onClick={() => setStreetViewMode(prev => prev === 'selecting' ? 'inactive' : 'selecting')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl border backdrop-blur-md shadow-lg transition-all font-bold text-sm ${
