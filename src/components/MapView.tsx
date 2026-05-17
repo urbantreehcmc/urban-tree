@@ -448,6 +448,29 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
   }, [defaultSpatialOpen]);
 
   useEffect(() => {
+    const handleMoveTree = (e: any) => {
+      setEditingTree({
+        id: String(e.detail.id),
+        lat: e.detail.lat,
+        lng: e.detail.lng
+      });
+      setPopupInfo(null);
+    };
+    
+    const handleStreetView = (e: any) => {
+      setStreetViewCoord({ lat: e.detail.lat, lng: e.detail.lng });
+      setPopupInfo(null);
+    };
+
+    window.addEventListener('START_MOVE_TREE', handleMoveTree);
+    window.addEventListener('START_STREET_VIEW', handleStreetView);
+    return () => {
+      window.removeEventListener('START_MOVE_TREE', handleMoveTree);
+      window.removeEventListener('START_STREET_VIEW', handleStreetView);
+    };
+  }, []);
+
+  useEffect(() => {
     setIsMounted(true);
   }, []);
   

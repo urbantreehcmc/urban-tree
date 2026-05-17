@@ -3,6 +3,11 @@
 import { useState, useEffect } from "react";
 import { TreeRecord } from "@/lib/types";
 import { supabase } from "@/lib/supabase";
+import proj4 from "proj4";
+
+// Cấu hình hệ tọa độ VN2000 múi chiếu 3 độ, kinh tuyến trục 105.75 (Hồ Chí Minh)
+const VN2000_HCM = '+proj=tmerc +lat_0=0 +lon_0=105.75 +k=0.9999 +x_0=500000 +y_0=0 +ellps=WGS84 +towgs84=-191.90441429,-39.30318279,-111.45032835,0.00928836,-0.01975479,0.00427372,0.252906278 +units=m +no_defs';
+
 
 interface TreeDetailProps {
   tree: TreeRecord;
@@ -151,10 +156,20 @@ export default function TreeDetail({ tree, onBack, onCreatePatrol }: TreeDetailP
 
           <div style={{ width: 1, height: 24, background: "#e2e8f0", margin: "0 4px" }}></div>
 
-          <button className="btn-secondary" style={{ padding: "8px 12px" }} title="Xem Street View">
+          <button className="btn-secondary" style={{ padding: "8px 12px" }} title="Xem Street View" onClick={() => {
+            onBack();
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('START_STREET_VIEW', { detail: { lat: tree.lat, lng: tree.lng } }));
+            }, 10);
+          }}>
             <i className="material-icons" style={{ fontSize: 20, color: "#7e3af2" }}>streetview</i>
           </button>
-          <button className="btn-secondary" style={{ padding: "8px 12px" }} title="Dời vị trí cây">
+          <button className="btn-secondary" style={{ padding: "8px 12px" }} title="Dời vị trí cây" onClick={() => {
+            onBack();
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent('START_MOVE_TREE', { detail: { id: tree.id, lat: tree.lat, lng: tree.lng } }));
+            }, 10);
+          }}>
             <i className="material-icons" style={{ fontSize: 20, color: "#16a34a" }}>open_with</i>
           </button>
           <button className="btn-secondary" style={{ padding: "8px 12px" }} title="In lý lịch cây">
@@ -333,6 +348,8 @@ export default function TreeDetail({ tree, onBack, onCreatePatrol }: TreeDetailP
                         <div style={{ height: 1, background: "#f1f5f9", gridColumn: "span 2", margin: "8px 0" }}></div>
                         <InfoRow label="Vĩ độ (Lat)" value={formData.lat?.toFixed(6) || "—"} />
                         <InfoRow label="Kinh độ (Lng)" value={formData.lng?.toFixed(6) || "—"} />
+                        <InfoRow label="VN2000 (X)" value={formData.lat && formData.lng ? proj4('WGS84', VN2000_HCM, [formData.lng, formData.lat])[0].toFixed(2) : "—"} />
+                        <InfoRow label="VN2000 (Y)" value={formData.lat && formData.lng ? proj4('WGS84', VN2000_HCM, [formData.lng, formData.lat])[1].toFixed(2) : "—"} />
                       </div>
                     </div>
                   </div>
