@@ -298,3 +298,29 @@ DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- =============================================
+-- RLS POLICIES CHO BẢNG TREES
+-- =============================================
+ALTER TABLE public.trees ENABLE ROW LEVEL SECURITY;
+
+-- Cho phép tất cả mọi người đọc dữ liệu (cần thiết để load bản đồ cho khách)
+CREATE POLICY "Cho phép xem danh sách cây" 
+ON public.trees FOR SELECT 
+USING (true);
+
+-- Cho phép người dùng đã đăng nhập (authenticated) được quyền THÊM cây mới
+CREATE POLICY "Cho phép thêm cây mới" 
+ON public.trees FOR INSERT 
+WITH CHECK (auth.role() = 'authenticated');
+
+-- Cho phép người dùng đã đăng nhập được quyền SỬA thông tin cây (bao gồm cả kéo thả tọa độ)
+CREATE POLICY "Cho phép sửa thông tin cây" 
+ON public.trees FOR UPDATE 
+USING (auth.role() = 'authenticated')
+WITH CHECK (auth.role() = 'authenticated');
+
+-- Cho phép người dùng đã đăng nhập được quyền XÓA cây
+CREATE POLICY "Cho phép xóa cây" 
+ON public.trees FOR DELETE 
+USING (auth.role() = 'authenticated');
