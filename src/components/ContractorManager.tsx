@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { ContractorRecord } from "@/lib/types";
@@ -9,54 +9,88 @@ export default function ContractorManager() {
   const filtered = allContractors.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.taxCode.includes(search));
 
   return (
-    <div className="h-full overflow-y-auto bg-[#f5f7fa] custom-scrollbar">
-      <div className="max-w-[1600px] mx-auto p-6 flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-[#333]">Há»‡ thá»‘ng Nhà thầu</h2>
-            <p className="text-sm text-[#999] mt-0.5">Quản lý thông tin pháp lý, nÄƒng lực và đánh giá chất lượng</p>
-          </div>
-          <button className="px-4 py-2 bg-[#2563eb] text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity">+ ĐĒng ký nhà thầu</button>
+    <div style={{ height: "100%", overflowY: "auto", padding: "20px", backgroundColor: "#f5f7fa" }}>
+      {/* HEADER */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <div>
+          <h2 style={{ fontSize: "20px", fontWeight: "500", color: "#333", margin: "0 0 5px 0" }}>Quản lý Nhà thầu</h2>
+          <p style={{ fontSize: "14px", color: "#666", margin: 0 }}>Quản lý thông tin pháp lý, năng lực và đánh giá chất lượng</p>
         </div>
+      </div>
 
-        <div className="card p-3">
-          <div className="relative w-full max-w-sm">
-            <svg className="absolute left-3 top-1/2 -translate-y-1/2 text-[#999]" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-            <input type="text" placeholder="Tìm theo tên hoặc MST..." value={search} onChange={(e) => setSearch(e.target.value)} className="w-full pl-9 pr-4 py-2 rounded-lg bg-[#f5f7fa] text-sm border border-[#e0e0e0] focus:border-[#2563eb] focus:outline-none transition-colors placeholder:text-[#999]" />
-          </div>
+      {/* ACTIONS */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "15px" }}>
+        <div style={{ position: "relative", width: "350px" }}>
+          <i className="material-icons" style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", color: "#999", fontSize: "20px" }}>search</i>
+          <input 
+            type="text" 
+            placeholder="Tìm theo tên hoặc MST..." 
+            value={search} 
+            onChange={(e) => setSearch(e.target.value)} 
+            className="form-input"
+            style={{ paddingLeft: "38px", margin: 0 }}
+          />
         </div>
+        <button className="btn-primary" style={{ display: "flex", alignItems: "center", gap: "8px", padding: "8px 16px" }}>
+          <i className="material-icons" style={{ fontSize: "18px" }}>add_business</i>
+          Đăng ký nhà thầu
+        </button>
+      </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filtered.map((c) => (
-            <div key={c.id} className="card p-5 hover:border-[#2563eb]/30 transition-colors">
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="text-base font-semibold text-[#333]">{c.name}</h3>
-                  <p className="text-xs text-[#999] mt-0.5">MST: {c.taxCode}</p>
-                </div>
-                <div className="flex items-center gap-1 text-amber-400">
-                  <span className="text-sm font-semibold">{c.rating}</span>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 text-sm py-3 border-y border-[#e0e0e0]">
-                <div><p className="text-[10px] text-[#999] uppercase tracking-wider mb-0.5">Äáº¡i diá»‡n</p><p className="text-[#333]">{c.representative}</p></div>
-                <div><p className="text-[10px] text-[#999] uppercase tracking-wider mb-0.5">Äiá»‡n thoáº¡i</p><p className="text-[#333] font-mono">{c.phone}</p></div>
-                <div><p className="text-[10px] text-[#999] uppercase tracking-wider mb-0.5">Email</p><p className="text-[#333]">{c.email}</p></div>
-                <div><p className="text-[10px] text-[#999] uppercase tracking-wider mb-0.5">Lĩnh vực</p><p className="text-[#333]">{c.specialization}</p></div>
-              </div>
-              <p className="text-xs text-[#999] mt-3">{c.address}</p>
-            </div>
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="card p-10 text-center">
-            <p className="text-sm text-[#999]">Chưa có dữ liệu nhà thầu. Dữ liệu sẽ được kết nối từ Supabase.</p>
-          </div>
-        )}
+      {/* TABLE */}
+      <div className="card" style={{ backgroundColor: "white", borderRadius: "8px", boxShadow: "0 2px 5px rgba(0,0,0,0.05)" }}>
+        <table className="data-table">
+          <thead>
+            <tr>
+              <th>Nhà thầu</th>
+              <th>Mã số thuế</th>
+              <th>Liên hệ</th>
+              <th>Lĩnh vực</th>
+              <th style={{ textAlign: "center" }}>Đánh giá</th>
+              <th style={{ textAlign: "right" }}>Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((c) => (
+              <tr key={c.id}>
+                <td>
+                  <div style={{ fontWeight: "500", color: "#333", fontSize: "14px", marginBottom: "2px" }}>{c.name}</div>
+                  <div style={{ color: "#777", fontSize: "12px" }}>{c.address}</div>
+                </td>
+                <td>
+                  <span style={{ fontFamily: "monospace", fontSize: "13px", color: "#555", backgroundColor: "#f5f5f5", padding: "2px 6px", borderRadius: "4px" }}>
+                    {c.taxCode}
+                  </span>
+                </td>
+                <td>
+                  <div style={{ fontSize: "13px", color: "#333", marginBottom: "2px" }}>{c.representative}</div>
+                  <div style={{ fontSize: "12px", color: "#666" }}>{c.phone}</div>
+                </td>
+                <td>
+                  <span style={{ fontSize: "13px", color: "#666" }}>{c.specialization}</span>
+                </td>
+                <td style={{ textAlign: "center" }}>
+                  <div style={{ display: "inline-flex", alignItems: "center", gap: "2px", backgroundColor: "#fffbeb", color: "#d97706", padding: "2px 8px", borderRadius: "12px", fontWeight: "600", fontSize: "12px" }}>
+                    <span>{c.rating}</span>
+                    <i className="material-icons" style={{ fontSize: "14px" }}>star</i>
+                  </div>
+                </td>
+                <td style={{ textAlign: "right" }}>
+                  <button style={{ background: "none", border: "none", color: "#2563eb", cursor: "pointer", padding: "4px" }} title="Chỉnh sửa">
+                    <i className="material-icons" style={{ fontSize: "20px" }}>edit</i>
+                  </button>
+                  <button style={{ background: "none", border: "none", color: "#ef4444", cursor: "pointer", padding: "4px" }} title="Xóa">
+                    <i className="material-icons" style={{ fontSize: "20px" }}>delete</i>
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {filtered.length === 0 && (
+              <tr><td colSpan={6} style={{ padding: "40px", textAlign: "center", color: "#999", fontSize: "14px" }}>Chưa có dữ liệu nhà thầu.</td></tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
-
