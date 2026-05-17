@@ -480,6 +480,7 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
 
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [isLayersOpen, setIsLayersOpen] = useState(false);
 
   const handleGeolocate = useCallback(() => {
     if (!navigator.geolocation) {
@@ -1265,119 +1266,122 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
         </div>
       )}
 
-      {/* Layer Control Panel */}
-      <div
-        id="layer-control"
-        className="absolute top-6 left-6 card px-6 py-6 fade-in min-w-[240px]"
+      {/* Nút Lớp dữ liệu kiểu Google */}
+      <button
+        onClick={() => setIsLayersOpen(prev => !prev)}
+        className={`absolute top-6 left-6 z-10 w-10 h-10 rounded-xl flex items-center justify-center border backdrop-blur-md shadow-lg transition-all duration-300 cursor-pointer ${
+          isLayersOpen
+            ? 'bg-blue-600 border-blue-500 text-white shadow-blue-500/20'
+            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+        }`}
+        title="Lớp dữ liệu bản đồ"
       >
-        <p className="text-[12px] font-bold text-[#2563eb] mb-6 uppercase tracking-widest border-b border-[#e0e0e0] pb-3 mt-1">
-          Lớp dữ liệu
-        </p>
-        <div className="space-y-6 max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar">
-          {[
-            { key: "trees" as const, label: "Cây xanh", color: "#22c55e", count: activeTrees.length, subLayers: [
-              { key: "statusHealthy" as const, label: "Khỏe mạnh", color: "#22c55e", count: statusCounts.khoe || 0 },
-              { key: "statusSick" as const, label: "Sâu bệnh", color: "#f59e0b", count: statusCounts.sauBenh || 0 },
-              { key: "statusFell" as const, label: "Cần đốn hạ", color: "#ef4444", count: statusCounts.canDonHa || 0 },
-              { key: "statusNew" as const, label: "Mới trồng", color: "#3b82f6", count: statusCounts.moi || 0 },
-              { key: "statusProcessing" as const, label: "Đang xử lý", color: "#a855f7", count: statusCounts.dangXuLy || 0 },
-            ]},
-            { key: "parks" as const, label: "Công viên", color: "#14b8a6", count: 0 },
-            { key: "greenAreas" as const, label: "Mảng xanh", color: "#22c55e", count: 0 },
-            { key: "phuongXa" as const, label: "Phường/Xã", color: "#eab308", count: 168 },
-          ].map((item) => (
-            <div key={item.key} className="space-y-2">
-              <label className="flex items-center gap-5 cursor-pointer group py-3 hover:bg-white/5 rounded-xl px-3 -mx-3 transition-all duration-200">
-                <input
-                  type="checkbox"
-                  checked={layers[item.key]}
-                  onChange={() => setLayers((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
-                  className="sr-only"
-                />
-                <div
-                  className={`w-[18px] h-[18px] rounded-[6px] flex items-center justify-center border transition-all ${
-                    layers[item.key]
-                      ? "border-transparent shadow-md scale-110"
-                      : "border-[#999] bg-[#f5f7fa] scale-100"
-                  }`}
-                  style={layers[item.key] ? { backgroundColor: item.color } : {}}
-                >
-                  {layers[item.key] && (
-                    <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
-                      <polyline points="2 6 5 9 10 3" />
-                    </svg>
-                  )}
-                </div>
-                <span className="text-sm font-bold text-[#333] transition-colors">
-                  {item.label}
-                </span>
-                {"count" in item && (
-                  <span className="text-xs font-semibold text-[#666] ml-auto tabular-nums bg-[#e0e0e0] px-2 py-0.5 rounded-full min-w-[32px] text-center">
-                    {item.count}
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+      </button>
+
+      {/* Layer Control Panel */}
+      {isLayersOpen && (
+        <div
+          id="layer-control"
+          className="absolute top-20 left-6 card px-5 py-5 fade-in min-w-[260px] border border-slate-200 shadow-2xl z-10"
+        >
+          <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 mt-1">
+            <p className="text-[12px] font-bold text-blue-600 uppercase tracking-widest">
+              Lớp dữ liệu
+            </p>
+            <button
+              onClick={() => setIsLayersOpen(false)}
+              className="w-5 h-5 flex items-center justify-center rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+          </div>
+          <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+            {[
+              { key: "trees" as const, label: "Cây xanh", color: "#22c55e", count: activeTrees.length, subLayers: [
+                { key: "statusHealthy" as const, label: "Khỏe mạnh", color: "#22c55e", count: statusCounts.khoe || 0 },
+                { key: "statusSick" as const, label: "Sâu bệnh", color: "#f59e0b", count: statusCounts.sauBenh || 0 },
+                { key: "statusFell" as const, label: "Cần đốn hạ", color: "#ef4444", count: statusCounts.canDonHa || 0 },
+                { key: "statusNew" as const, label: "Mới trồng", color: "#3b82f6", count: statusCounts.moi || 0 },
+                { key: "statusProcessing" as const, label: "Đang xử lý", color: "#a855f7", count: statusCounts.dangXuLy || 0 },
+              ]},
+              { key: "parks" as const, label: "Công viên", color: "#14b8a6", count: 0 },
+              { key: "greenAreas" as const, label: "Mảng xanh", color: "#22c55e", count: 0 },
+              { key: "phuongXa" as const, label: "Phường/Xã", color: "#eab308", count: 168 },
+            ].map((item) => (
+              <div key={item.key} className="space-y-2">
+                <label className="flex items-center gap-5 cursor-pointer group py-3 hover:bg-white/5 rounded-xl px-3 -mx-3 transition-all duration-200">
+                  <input
+                    type="checkbox"
+                    checked={layers[item.key]}
+                    onChange={() => setLayers((prev) => ({ ...prev, [item.key]: !prev[item.key] }))}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-[18px] h-[18px] rounded-[6px] flex items-center justify-center border transition-all ${
+                      layers[item.key]
+                        ? "border-transparent shadow-md scale-110"
+                        : "border-[#999] bg-[#f5f7fa] scale-100"
+                    }`}
+                    style={layers[item.key] ? { backgroundColor: item.color } : {}}
+                  >
+                    {layers[item.key] && (
+                      <svg width="10" height="10" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="2.5">
+                        <polyline points="2 6 5 9 10 3" />
+                      </svg>
+                    )}
+                  </div>
+                  <span className="text-sm font-bold text-[#333] transition-colors">
+                    {item.label}
                   </span>
-                )}
-              </label>
+                  {"count" in item && (
+                    <span className="text-xs font-semibold text-[#666] ml-auto tabular-nums bg-[#e0e0e0] px-2 py-0.5 rounded-full min-w-[32px] text-center">
+                      {item.count}
+                    </span>
+                  )}
+                </label>
 
-              {/* Render sub-layers (status filters) if trees is active */}
-              {item.key === "trees" && layers.trees && item.subLayers && (
-                <div className="ml-8 space-y-3 pt-1 border-l border-white/10 pl-4">
-                  {item.subLayers.map((sub) => (
-                    <label key={sub.key} className="flex items-center gap-4 cursor-pointer group py-1.5 hover:bg-white/5 rounded-lg px-2 -mx-2 transition-all duration-200">
-                      <input
-                        type="checkbox"
-                        checked={layers[sub.key]}
-                        onChange={() => setLayers((prev) => ({ ...prev, [sub.key]: !prev[sub.key] }))}
-                        className="sr-only"
-                      />
-                      <div
-                        className={`w-3.5 h-3.5 rounded-full border transition-all ${
-                          layers[sub.key]
-                            ? "border-transparent shadow-sm"
-                            : "border-[#999] bg-transparent"
-                        }`}
-                        style={layers[sub.key] ? { backgroundColor: sub.color } : {}}
-                      >
-                      </div>
-                      <span className="text-xs font-medium text-[#666] transition-colors">
-                        {sub.label}
-                      </span>
-                      {"count" in sub && (
-                        <span className="text-[10px] font-medium text-[#999] ml-auto tabular-nums bg-[#e0e0e0] px-1.5 py-0.5 rounded-full min-w-[24px] text-center">
-                          {sub.count}
+                {/* Render sub-layers (status filters) if trees is active */}
+                {item.key === "trees" && layers.trees && item.subLayers && (
+                  <div className="ml-8 space-y-3 pt-1 border-l border-white/10 pl-4">
+                    {item.subLayers.map((sub) => (
+                      <label key={sub.key} className="flex items-center gap-4 cursor-pointer group py-1.5 hover:bg-white/5 rounded-lg px-2 -mx-2 transition-all duration-200">
+                        <input
+                          type="checkbox"
+                          checked={layers[sub.key]}
+                          onChange={() => setLayers((prev) => ({ ...prev, [sub.key]: !prev[sub.key] }))}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-3.5 h-3.5 rounded-full border transition-all ${
+                            layers[sub.key]
+                              ? "border-transparent shadow-sm"
+                              : "border-[#999] bg-transparent"
+                          }`}
+                          style={layers[sub.key] ? { backgroundColor: sub.color } : {}}
+                        >
+                        </div>
+                        <span className="text-xs font-medium text-[#666] transition-colors">
+                          {sub.label}
                         </span>
-                      )}
-                    </label>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+                        {"count" in sub && (
+                          <span className="text-[10px] font-medium text-[#999] ml-auto tabular-nums bg-[#e0e0e0] px-1.5 py-0.5 rounded-full min-w-[24px] text-center">
+                            {sub.count}
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Legend */}
-      <div className="absolute bottom-10 left-6 card px-4 py-4 fade-in min-w-[160px]">
-        <p className="text-[11px] font-bold text-[#999] mb-4 uppercase tracking-wider border-b border-[#e0e0e0] pb-2">
-          Chú thích
-        </p>
-        <div className="space-y-4">
-          {[
-            { color: "#22c55e", label: "Khỏe mạnh" },
-            { color: "#f59e0b", label: "Sâu bệnh" },
-            { color: "#ef4444", label: "Cần đốn hạ" },
-            { color: "#3b82f6", label: "Mới trồng" },
-            { color: "#a855f7", label: "Đang xử lý" },
-          ].map((item) => (
-            <div key={item.label} className="flex items-center gap-3">
-              <div
-                className="w-3 h-3 rounded-full shadow-sm"
-                style={{ backgroundColor: item.color }}
-              />
-              <span className="text-xs font-medium text-[#666]">{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      )}
 
       {/* Spatial Analysis Panel */}
       <SpatialAnalysisPanel
