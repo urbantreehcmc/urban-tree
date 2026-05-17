@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { type TreeRecord } from "@/lib/types";
@@ -47,10 +47,20 @@ export default function StreetViewPanel({ coord, onClose }: StreetViewPanelProps
         </svg>
       </button>
 
-      {/* Cảnh báo chế độ Iframe */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 px-4 py-2 bg-black/60 backdrop-blur-md rounded-full text-white/90 text-[11px] font-medium border border-purple-500/30 pointer-events-none flex items-center gap-2 shadow-lg">
-        <span className="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span>
-        Chế độ xem thực địa (Iframe Bypass) - Không hỗ trợ hiển thị vị trí cây
+      {/* Nút chuyển sang Google Maps chính thức */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-2">
+        <a 
+          href={`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${coord.lat},${coord.lng}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="px-5 py-2.5 bg-[#4285F4] hover:bg-[#3367D6] text-white rounded-full text-sm font-bold border border-white/20 shadow-[0_0_20px_rgba(66,133,244,0.4)] flex items-center gap-2 transition-all transform hover:scale-105"
+        >
+          <i className="material-icons" style={{ fontSize: 18 }}>open_in_new</i>
+          Mở Bản Mới Nhất (Google Maps)
+        </a>
+        <div className="px-4 py-1.5 bg-black/50 backdrop-blur-md rounded-full text-white/70 text-[10px] font-medium pointer-events-none flex items-center gap-2">
+          <span>Chế độ hiện tại: Khung nhìn thay thế (Dữ liệu có thể cũ)</span>
+        </div>
       </div>
     </div>
   );
