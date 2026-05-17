@@ -47,6 +47,13 @@ export default function TaskManager({ onOpenTicket, onShowAlert, showMode = "all
 
   useEffect(() => { fetchData(); }, [activeTab]);
   useEffect(() => { fetchCounts(); }, []);
+  
+  // Auto-refresh counts khi user quay lại tab
+  useEffect(() => {
+    const handleFocus = () => fetchCounts();
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, []);
 
   async function fetchCounts() {
     try {
@@ -104,6 +111,7 @@ export default function TaskManager({ onOpenTicket, onShowAlert, showMode = "all
       console.error("Lỗi fetch:", err);
     } finally {
       setLoading(false);
+      fetchCounts(); // Auto-refresh counts sau mỗi lần fetch data
     }
   }
 
@@ -151,7 +159,7 @@ export default function TaskManager({ onOpenTicket, onShowAlert, showMode = "all
               {showMode === "patrol" ? "Nhật ký Tuần tra & Ghi nhận" : showMode === "tickets" ? "Quy trình Xử lý Sự cố" : "Quản lý Sự cố & Xử lý"}
             </h2>
             <p style={{ fontSize: 13, color: "#999", marginTop: 2 }}>
-              {showMode === "patrol" ? "Danh sách nhật ký sự cố cây xanh ghi nhận trong quá trình tuần tra thực địa" : showMode === "tickets" ? "Quy trình 4 bước: Phiếu đề xuất → Phê duyệt → Xử lý → Hoàn công" : "Quy trình 5 bước: Tuần tra → Phiếu đề xuất → Phê duyệt → Xử lý → Hoàn công"}
+              {showMode === "patrol" ? "Quy trình 5 bước: Tuần tra → Phiếu đề xuất → Phê duyệt → Xử lý → Hoàn công" : showMode === "tickets" ? "Quy trình 3 bước: Sự cố - Tiếp nhận → Xử lý → Hoàn công" : "Quy trình 5 bước: Tuần tra → Phiếu đề xuất → Phê duyệt → Xử lý → Hoàn công"}
             </p>
           </div>
           <button className="btn-primary" onClick={() => { fetchData(); fetchCounts(); }}>
