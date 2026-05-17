@@ -98,7 +98,7 @@ export default function Dashboard({ trees }: DashboardProps) {
 
 
   return (
-    <div style={{ padding: 24, overflowY: "auto", height: "100%" }}>
+    <div className="p-4 md:p-6 overflow-y-auto h-full">
       <div style={{ maxWidth: 1400, margin: "0 auto" }}>
         {/* Header */}
         <div style={{ marginBottom: 24 }}>
@@ -107,7 +107,7 @@ export default function Dashboard({ trees }: DashboardProps) {
         </div>
 
         {/* Primary KPI Cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16, marginBottom: 16 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
           {primaryKpis.map((card) => (
             <div key={card.label} className="card" style={{ padding: 16, border: "1px solid #f0f0f0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -124,7 +124,7 @@ export default function Dashboard({ trees }: DashboardProps) {
         </div>
 
         {/* Secondary KPI Cards (Archive/Stop Management) */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 16, marginBottom: 24 }}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
           {secondaryKpis.map((card) => (
             <div key={card.label} className="card" style={{ padding: "12px 20px", background: "#fcfcfc", border: "1px dashed #e0e0e0" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -142,11 +142,11 @@ export default function Dashboard({ trees }: DashboardProps) {
 
 
         {/* Charts Grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="lg:col-span-2 flex flex-col gap-6">
             {/* Recent Patrol Logs Table */}
-            <div className="card">
+            <div className="card" style={{ overflowX: "auto" }}>
               <div className="card-header-bar">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <i className="material-icons" style={{ fontSize: 20, color: "#d97706" }}>report_problem</i>
@@ -203,7 +203,7 @@ export default function Dashboard({ trees }: DashboardProps) {
             </div>
 
             {/* Recent Trees Table */}
-            <div className="card">
+            <div className="card" style={{ overflowX: "auto" }}>
               <div className="card-header-bar">
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <i className="material-icons" style={{ fontSize: 20, color: "#2563eb" }}>list_alt</i>
@@ -260,7 +260,7 @@ export default function Dashboard({ trees }: DashboardProps) {
           </div>
 
           {/* Right Column */}
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="flex flex-col gap-6">
             {/* Health Stats */}
             <div className="card" style={{ padding: 20 }}>
               <h4 style={{ fontSize: 12, fontWeight: 700, color: "#999", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 20 }}>Sức khỏe cây xanh</h4>

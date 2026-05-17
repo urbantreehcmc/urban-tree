@@ -1213,10 +1213,10 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
 
       {/* Edit Location Control Panel */}
       {editingTree && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 card px-6 py-4 flex flex-col items-center gap-3 z-50 min-w-[320px] border border-emerald-500/30 shadow-2xl shadow-emerald-500/10 fade-in">
+        <div className="absolute top-4 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto card px-6 py-4 flex flex-col items-center gap-3 z-50 w-auto sm:w-[320px] border border-emerald-500/30 shadow-2xl shadow-emerald-500/10 fade-in bg-white">
           <div className="flex items-center gap-3 w-full">
             <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center animate-pulse">
-              <span className="text-xl">ðŸ“</span>
+              <span className="text-xl">📍</span>
             </div>
             <div>
               <p className="text-sm font-bold text-[#333]">Chế độ dời vị trí</p>
@@ -1236,24 +1236,20 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
                     
                   if (error) throw error;
                   
-                  // Optimistic Update is not strictly required here if we force a refetch, 
-                  // but we can just let it reload the data through Supabase realtime or next fetch.
-                  // For now, since user wants to do it from the office, just alert and close.
-                  alert("Äã lưu vị trí cây thành công!");
+                  alert("Đã lưu vị trí cây thành công!");
                   
-                  // Reload trang hoặc rely on the timer to fetch
                   setEditingTree(null);
                 } catch (err: any) {
-                  console.error("Lá»—i cập nhật vị trí:", err);
-                  alert("Lá»—i khi lưu vị trí: " + (err.message || "Không xác đá»‹nh"));
+                  console.error("Lỗi cập nhật vị trí:", err);
+                  alert("Lỗi khi lưu vị trí: " + (err.message || "Không xác định"));
                 } finally {
                   setIsSavingLocation(false);
                 }
               }}
               disabled={isSavingLocation}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors disabled:opacity-50"
+              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
             >
-              {isSavingLocation ? "Äang lưu..." : "Lưu vị trí"}
+              {isSavingLocation ? "Đang lưu..." : "Lưu vị trí"}
             </button>
             <button
               onClick={() => setEditingTree(null)}
@@ -1269,7 +1265,7 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
       {/* Nút Lớp dữ liệu kiểu Google */}
       <button
         onClick={() => setIsLayersOpen(prev => !prev)}
-        className={`absolute top-6 left-6 z-10 w-10 h-10 rounded-xl flex items-center justify-center border backdrop-blur-md shadow-lg transition-all duration-300 cursor-pointer ${
+        className={`absolute top-4 left-4 sm:top-6 sm:left-6 z-10 w-10 h-10 rounded-xl flex items-center justify-center border backdrop-blur-md shadow-lg transition-all duration-300 cursor-pointer ${
           isLayersOpen
             ? 'bg-blue-600 border-blue-500 text-white shadow-blue-500/20'
             : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
@@ -1287,7 +1283,7 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
       {isLayersOpen && (
         <div
           id="layer-control"
-          className="absolute top-20 left-6 card px-5 py-5 fade-in min-w-[260px] border border-slate-200 shadow-2xl z-10"
+          className="absolute top-16 left-4 right-4 sm:top-20 sm:left-6 sm:right-auto z-10 w-auto sm:w-[260px] card px-5 py-5 fade-in border border-slate-200 shadow-2xl bg-white"
         >
           <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 mt-1">
             <p className="text-[12px] font-bold text-blue-600 uppercase tracking-widest">

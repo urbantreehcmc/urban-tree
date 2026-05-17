@@ -200,7 +200,7 @@ export default function SpatialAnalysisPanel({
       {/* Panel */}
       {isOpen && (
         <div
-          className="absolute top-16 right-5 z-10 w-[400px] max-h-[calc(100%-100px)] overflow-y-auto rounded-2xl shadow-2xl border border-[#e0e0e0] fade-in card"
+          className="absolute top-16 right-4 left-4 sm:left-auto z-10 w-auto sm:w-[400px] max-h-[calc(100%-100px)] overflow-y-auto rounded-2xl shadow-2xl border border-[#e0e0e0] fade-in card bg-white"
         >
           {/* Panel Header */}
           <div className="sticky top-0 z-10 px-6 py-5 border-b border-[#e0e0e0] bg-[#ffffff] backdrop-blur-xl rounded-t-2xl">
