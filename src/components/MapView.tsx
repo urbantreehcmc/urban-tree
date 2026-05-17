@@ -1174,43 +1174,39 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
         )}
       </Map>
 
-      {/* Nút bật/tắt Chế đá»™ Street View và Định vị */}
-      <div className="absolute top-[72px] right-14 z-10 flex flex-col gap-2">
+      {/* Nhóm công cụ Bản đồ (Định vị & Phố cảnh) - Tích hợp cùng cột với cụm Zoom */}
+      <div className="absolute top-[105px] right-[10px] z-10 flex flex-col bg-white rounded-[4px] border border-slate-300/70 shadow-md overflow-hidden w-[29px]">
         {/* Nút định vị vị trí hiện tại */}
         <button
           onClick={handleGeolocate}
           disabled={isLocating}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl border backdrop-blur-md shadow-lg transition-all font-bold text-sm bg-white hover:bg-slate-50 text-slate-800 border-slate-200"
+          className="w-[29px] h-[29px] flex items-center justify-center bg-white hover:bg-slate-50 active:bg-slate-100 transition-colors border-b border-slate-200/80 disabled:opacity-70 cursor-pointer"
           title="Định vị vị trí của tôi"
         >
-          <div className="w-5 h-5 flex items-center justify-center shrink-0">
-            {isLocating ? (
-              <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            ) : (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="2.5">
-                <circle cx="12" cy="12" r="7" />
-                <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
-                <circle cx="12" cy="12" r="3" fill="#2563eb" className="animate-pulse" />
-              </svg>
-            )}
-          </div>
-          {isLocating ? 'Đang định vị...' : 'Định vị của tôi'}
+          {isLocating ? (
+            <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          ) : (
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.5">
+              <circle cx="12" cy="12" r="7" />
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" />
+              <circle cx="12" cy="12" r="3" fill="#2563eb" className="animate-pulse" />
+            </svg>
+          )}
         </button>
 
-        {/* Nút bật/tắt Chế đá»™ Street View */}
+        {/* Nút bật/tắt Chế độ Street View */}
         <button
           onClick={() => setStreetViewMode(prev => prev === 'selecting' ? 'inactive' : 'selecting')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl border backdrop-blur-md shadow-lg transition-all font-bold text-sm ${
+          className={`w-[29px] h-[29px] flex items-center justify-center transition-colors cursor-pointer ${
             streetViewMode === 'selecting'
-              ? 'bg-purple-600 text-white border-purple-500 shadow-purple-500/30'
-              : 'bg-[#ffffff] hover:bg-purple-600/80 text-[#333] hover:text-white border-[#e0e0e0]'
+              ? 'bg-purple-600 hover:bg-purple-700 text-white'
+              : 'bg-white hover:bg-slate-50 active:bg-slate-100 text-slate-600'
           }`}
-          title="Mở Street View tại vị trí click trên bản đồ"
+          title="Xem ảnh đường phố 360 độ (Phố cảnh)"
         >
-          <div className="w-5 h-5 rounded-md flex items-center justify-center">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-          </div>
-          {streetViewMode === 'selecting' ? 'Click vào vị trí cần xem...' : 'Chế độ Phố cảnh'}
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+            <path d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+          </svg>
         </button>
       </div>
 

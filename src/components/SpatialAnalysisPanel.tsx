@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useMemo, useCallback } from "react";
 import type { TreeRecord, ParkRecord, GreenAreaRecord } from "@/lib/types";
@@ -178,7 +178,7 @@ export default function SpatialAnalysisPanel({
       <button
         id="spatial-analysis-toggle"
         onClick={() => setIsOpen(!isOpen)}
-        className="absolute top-5 right-14 z-10 flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 cursor-pointer shadow-lg"
+        className="absolute top-[10px] right-[48px] z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 cursor-pointer shadow-md"
         style={{
           background: isOpen
             ? "linear-gradient(to right, #2563eb, #7e3af2)"
@@ -189,7 +189,7 @@ export default function SpatialAnalysisPanel({
           boxShadow: isOpen ? "0 4px 20px rgba(168,85,247,0.3)" : "0 4px 12px rgba(0,0,0,0.1)",
         }}
       >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
           <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
           <line x1="12" y1="22.08" x2="12" y2="12" />
