@@ -20,31 +20,30 @@ interface TaskManagerProps {
   showMode?: "all" | "patrol" | "tickets";
 }
 
-type WorkflowTab = "patrol" | "de_xuat" | "phe_duyet" | "xu_ly" | "hoan_cong";
+type WorkflowTab = "patrol" | "de_xuat" | "phe_duyet" | "tiep_nhan" | "xu_ly" | "hoan_cong";
 
-const WORKFLOW_TABS: { id: WorkflowTab; label: string; icon: string; color: string; statuses?: TicketStatus[] }[] = [
-  { id: "patrol",     label: "Tuần tra",       icon: "directions_walk", color: "#2563eb" },
-  { id: "de_xuat",   label: "Phiếu đề xuất",  icon: "description",     color: "#d97706", statuses: ["moi"] },
-  { id: "phe_duyet", label: "Phê duyệt",       icon: "verified",        color: "#7c3aed", statuses: ["cho_duyet", "tu_choi"] },
-  { id: "xu_ly",     label: "Xử lý",           icon: "engineering",     color: "#0891b2", statuses: ["da_duyet", "dang_thi_cong"] },
-  { id: "hoan_cong", label: "Hoàn công",       icon: "task_alt",        color: "#16a34a", statuses: ["hoan_thanh"] },
-];
+const TABS_CONFIG: Record<WorkflowTab, { label: string; icon: string; color: string; statuses?: TicketStatus[] }> = {
+  patrol:     { label: "Tuần tra",       icon: "directions_walk", color: "#2563eb" },
+  de_xuat:    { label: "Phiếu đề xuất",  icon: "description",     color: "#d97706", statuses: ["moi"] },
+  phe_duyet:  { label: "Phê duyệt",       icon: "verified",        color: "#7c3aed", statuses: ["cho_duyet", "tu_choi"] },
+  tiep_nhan:  { label: "Sự cố - Tiếp nhận", icon: "report_problem", color: "#d97706", statuses: ["moi", "cho_duyet", "tu_choi"] },
+  xu_ly:      { label: "Xử lý",           icon: "engineering",     color: "#0891b2", statuses: ["da_duyet", "dang_thi_cong"] },
+  hoan_cong:  { label: "Hoàn công",       icon: "task_alt",        color: "#16a34a", statuses: ["hoan_thanh"] },
+};
 
 export default function TaskManager({ onOpenTicket, onShowAlert, showMode = "all" }: TaskManagerProps) {
-  const [activeTab, setActiveTab] = useState<WorkflowTab>(showMode === "tickets" ? "de_xuat" : "patrol");
+  const [activeTab, setActiveTab] = useState<WorkflowTab>(showMode === "tickets" ? "tiep_nhan" : "patrol");
   const [patrols, setPatrols] = useState<PatrolLog[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [counts, setCounts] = useState<Record<WorkflowTab, number>>({
-    patrol: 0, de_xuat: 0, phe_duyet: 0, xu_ly: 0, hoan_cong: 0,
+    patrol: 0, de_xuat: 0, phe_duyet: 0, tiep_nhan: 0, xu_ly: 0, hoan_cong: 0,
   });
 
-  const visibleTabs = WORKFLOW_TABS.filter(tab => {
-    if (showMode === "patrol") return tab.id === "patrol";
-    if (showMode === "tickets") return tab.id !== "patrol";
-    return true;
-  });
+  const visibleTabs = showMode === "tickets" 
+    ? ["tiep_nhan", "xu_ly", "hoan_cong"].map(id => ({ id: id as WorkflowTab, ...TABS_CONFIG[id as WorkflowTab] }))
+    : ["patrol", "de_xuat", "phe_duyet", "xu_ly", "hoan_cong"].map(id => ({ id: id as WorkflowTab, ...TABS_CONFIG[id as WorkflowTab] }));
 
   useEffect(() => { fetchData(); }, [activeTab]);
   useEffect(() => { fetchCounts(); }, []);
@@ -58,6 +57,7 @@ export default function TaskManager({ onOpenTicket, onShowAlert, showMode = "all
         patrol:     patrolCount || 0,
         de_xuat:    grp.filter(r => r.trang_thai === "moi").length,
         phe_duyet:  grp.filter(r => ["cho_duyet", "tu_choi"].includes(r.trang_thai)).length,
+        tiep_nhan:  grp.filter(r => ["moi", "cho_duyet", "tu_choi"].includes(r.trang_thai)).length,
         xu_ly:      grp.filter(r => ["da_duyet", "dang_thi_cong"].includes(r.trang_thai)).length,
         hoan_cong:  grp.filter(r => r.trang_thai === "hoan_thanh").length,
       });
@@ -84,7 +84,7 @@ export default function TaskManager({ onOpenTicket, onShowAlert, showMode = "all
           quan: r.trees?.quan,
         })));
       } else {
-        const tabDef = WORKFLOW_TABS.find(t => t.id === activeTab);
+        const tabDef = TABS_CONFIG[activeTab];
         const statuses = tabDef?.statuses || [];
         const { data } = await supabase
           .from("tickets")
