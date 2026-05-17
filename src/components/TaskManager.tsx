@@ -165,8 +165,8 @@ export default function TaskManager({ onOpenTicket, onShowAlert, onExportPDF, sh
           </div>
           <div style={{ display: "flex", gap: 8 }}>
             {showMode === "patrol" && onExportPDF && (
-              <button className="btn-secondary" onClick={onExportPDF} style={{ display: "flex", alignItems: "center", gap: 6, color: "#dc2626", borderColor: "#fca5a5" }}>
-                <i className="material-icons" style={{ fontSize: 18 }}>picture_as_pdf</i> Xuất PDF
+              <button className="btn-secondary" onClick={onExportPDF} style={{ display: "flex", alignItems: "center", gap: 6, color: "#16a34a", borderColor: "#86efac" }}>
+                <i className="material-icons" style={{ fontSize: 18 }}>table_chart</i> Xuất Excel
               </button>
             )}
             <button className="btn-primary" onClick={() => { fetchData(); fetchCounts(); }}>

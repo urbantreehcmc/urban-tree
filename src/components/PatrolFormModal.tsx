@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { supabase } from "@/lib/supabase";
 import {
   FieldCondition, UrgencyLevel,
@@ -23,6 +23,9 @@ const ALL_CONDITIONS: FieldCondition[] = [
   "cay_nghieng", "nhom_goc",
 ];
 
+const MAX_IMAGES = 5;
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+
 export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, lng, onClose, onSuccess }: Props) {
   const [urgency, setUrgency] = useState<UrgencyLevel>("thuong");
   const [conditions, setConditions] = useState<FieldCondition[]>([]);
@@ -30,10 +33,87 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
   const [inspector, setInspector] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  
+  // Image upload state
+  const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const toggleCondition = (c: FieldCondition) => {
     setConditions(prev => prev.includes(c) ? prev.filter(x => x !== c) : [...prev, c]);
   };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const remaining = MAX_IMAGES - images.length;
+    
+    if (remaining <= 0) {
+      setError(`Tối đa ${MAX_IMAGES} hình ảnh.`);
+      return;
+    }
+
+    const validFiles = files.slice(0, remaining).filter(f => {
+      if (f.size > MAX_FILE_SIZE) {
+        setError(`File "${f.name}" quá lớn (tối đa 5MB).`);
+        return false;
+      }
+      if (!f.type.startsWith("image/")) {
+        setError(`File "${f.name}" không phải hình ảnh.`);
+        return false;
+      }
+      return true;
+    });
+
+    const newImages = validFiles.map(file => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+    
+    setImages(prev => [...prev, ...newImages]);
+    setError("");
+    // Reset input
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeImage = (idx: number) => {
+    setImages(prev => {
+      const updated = [...prev];
+      URL.revokeObjectURL(updated[idx].preview);
+      updated.splice(idx, 1);
+      return updated;
+    });
+  };
+
+  async function uploadImages(): Promise<string[]> {
+    if (images.length === 0) return [];
+    
+    setUploading(true);
+    const urls: string[] = [];
+    
+    try {
+      for (const img of images) {
+        const ext = img.file.name.split(".").pop() || "jpg";
+        const fileName = `patrol/${treeId}/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        
+        const { data, error: uploadError } = await supabase.storage
+          .from("patrol-images")
+          .upload(fileName, img.file, { cacheControl: "3600", upsert: false });
+        
+        if (uploadError) {
+          console.error("Upload error:", uploadError);
+          // Fallback: lưu tên file nếu không upload được
+          urls.push(`[Chưa upload] ${img.file.name}`);
+        } else {
+          const { data: urlData } = supabase.storage.from("patrol-images").getPublicUrl(data.path);
+          urls.push(urlData.publicUrl);
+        }
+      }
+    } finally {
+      setUploading(false);
+    }
+    
+    return urls;
+  }
 
   const handleSubmit = async () => {
     if (conditions.length === 0 && !description.trim()) {
@@ -43,6 +123,9 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
     setSaving(true);
     setError("");
     try {
+      // Upload images first
+      const imageUrls = await uploadImages();
+      
       const { error: dbError } = await supabase.from("patrol_logs").insert({
         tree_id: treeId,
         lat: lat || null,
@@ -51,6 +134,7 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
         tinh_trang: conditions,
         mo_ta: description.trim() || null,
         nguoi_tuan_tra: inspector.trim() || null,
+        hinh_anh: imageUrls.length > 0 ? imageUrls : null,
       });
       if (dbError) throw dbError;
       onSuccess();
@@ -123,6 +207,62 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
           </div>
         </div>
 
+        {/* Hình ảnh hiện trường */}
+        <div className="form-group">
+          <label style={{ fontWeight: 600 }}>
+            Hình ảnh hiện trường
+            <span style={{ color: "#999", fontWeight: 400 }}> (tối đa {MAX_IMAGES} ảnh, mỗi ảnh ≤ 5MB)</span>
+          </label>
+          
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 10 }}>
+            {/* Preview ảnh đã chọn */}
+            {images.map((img, idx) => (
+              <div key={idx} style={{
+                width: 100, height: 100, borderRadius: 8, overflow: "hidden",
+                position: "relative", border: "2px solid #e0e0e0",
+              }}>
+                <img src={img.preview} alt={`Ảnh ${idx + 1}`} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                <button
+                  onClick={() => removeImage(idx)}
+                  style={{
+                    position: "absolute", top: 2, right: 2, width: 22, height: 22,
+                    borderRadius: "50%", border: "none", background: "rgba(0,0,0,0.6)",
+                    color: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 14, lineHeight: 1,
+                  }}
+                >×</button>
+              </div>
+            ))}
+            
+            {/* Nút thêm ảnh */}
+            {images.length < MAX_IMAGES && (
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                style={{
+                  width: 100, height: 100, borderRadius: 8, border: "2px dashed #bbb",
+                  background: "#fafafa", cursor: "pointer", display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 4, color: "#999",
+                  transition: "all 0.2s", fontFamily: "inherit",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = "#2563eb"; e.currentTarget.style.color = "#2563eb"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = "#bbb"; e.currentTarget.style.color = "#999"; }}
+              >
+                <i className="material-icons" style={{ fontSize: 28 }}>add_a_photo</i>
+                <span style={{ fontSize: 10, fontWeight: 500 }}>Thêm ảnh</span>
+              </button>
+            )}
+          </div>
+          
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            onChange={handleImageSelect}
+            style={{ display: "none" }}
+          />
+        </div>
+
         {/* Mô tả */}
         <div className="form-group">
           <label style={{ fontWeight: 600 }}>Mô tả chi tiết</label>
@@ -141,9 +281,9 @@ export default function PatrolFormModal({ treeId, treeName, treeLocation, lat, l
       {/* Footer */}
       <div className="modal-footer">
         <button className="btn-secondary" onClick={onClose}>Hủy</button>
-        <button className="btn-primary" onClick={handleSubmit} disabled={saving}>
+        <button className="btn-primary" onClick={handleSubmit} disabled={saving || uploading}>
           <i className="material-icons" style={{ fontSize: 16 }}>save</i>
-          {saving ? "Đang lưu..." : "Ghi nhận sự cố"}
+          {uploading ? "Đang tải ảnh..." : saving ? "Đang lưu..." : "Ghi nhận sự cố"}
         </button>
       </div>
     </div>
