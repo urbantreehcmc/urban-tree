@@ -20,6 +20,7 @@ import SpeciesManagement from "@/components/SpeciesManagement";
 import TreeDetail from "@/components/TreeDetail";
 import TicketDetailModal from "@/components/TicketDetailModal";
 import PatrolFormModal from "@/components/PatrolFormModal";
+import ExportPatrolPDF from "@/components/ExportPatrolPDF";
 import Notification, { NotificationType } from "@/components/Notification";
 import { useDashboardStats } from "@/lib/hooks/useDashboardStats";
 import { useTreeById } from "@/lib/hooks/useTreeById";
@@ -84,6 +85,7 @@ export default function Home() {
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [patrolTarget, setPatrolTarget] = useState<{ id: string; name: string; location: string; lat: number | null; lng: number | null } | null>(null);
   const [taskRefreshKey, setTaskRefreshKey] = useState(0);
+  const [showExportPDF, setShowExportPDF] = useState(false);
   
   const [alertConfig, setAlertConfig] = useState<{
     isOpen: boolean;
@@ -330,7 +332,7 @@ export default function Home() {
             {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "trees" && <TreeTable onManageTree={setSelectedTreeId} />}
             {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "parks" && <ParkManager showMode="parks" />}
             {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "greenAreas" && <ParkManager showMode="greenAreas" />}
-            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "patrol" && <TaskManager key="patrol" showMode="patrol" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
+            {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "patrol" && <TaskManager key="patrol" showMode="patrol" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} onExportPDF={() => setShowExportPDF(true)} />}
             {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "tasks" && <TaskManager key={taskRefreshKey} showMode="tickets" onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
             {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "species" && <SpeciesManagement />}
             {session && (userProfile?.status === 'active' || userProfile?.role === 'admin') && activeTab === "wards" && <WardTable />}
@@ -403,6 +405,18 @@ export default function Home() {
                   message: "Dữ liệu tuần tra đã được lưu vào hệ thống. Bạn có thể xem lại trong tab Công việc."
                 });
               }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* === EXPORT PDF MODAL === */}
+      {showExportPDF && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowExportPDF(false); }}>
+          <div className="modal-box" style={{ maxWidth: 640, maxHeight: "92vh" }}>
+            <ExportPatrolPDF
+              onClose={() => setShowExportPDF(false)}
+              onShowAlert={showAlert}
             />
           </div>
         </div>

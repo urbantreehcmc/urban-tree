@@ -17,6 +17,7 @@ interface TaskManagerProps {
     confirmText?: string;
     showCancel?: boolean;
   }) => void;
+  onExportPDF?: () => void;
   showMode?: "all" | "patrol" | "tickets";
 }
 
@@ -31,7 +32,7 @@ const TABS_CONFIG: Record<WorkflowTab, { label: string; icon: string; color: str
   hoan_cong:  { label: "Hoàn công",       icon: "task_alt",        color: "#16a34a", statuses: ["hoan_thanh"] },
 };
 
-export default function TaskManager({ onOpenTicket, onShowAlert, showMode = "all" }: TaskManagerProps) {
+export default function TaskManager({ onOpenTicket, onShowAlert, onExportPDF, showMode = "all" }: TaskManagerProps) {
   const [activeTab, setActiveTab] = useState<WorkflowTab>(showMode === "tickets" ? "tiep_nhan" : "patrol");
   const [patrols, setPatrols] = useState<PatrolLog[]>([]);
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -162,9 +163,16 @@ export default function TaskManager({ onOpenTicket, onShowAlert, showMode = "all
               {showMode === "patrol" ? "Quy trình 5 bước: Tuần tra → Phiếu đề xuất → Phê duyệt → Xử lý → Hoàn công" : showMode === "tickets" ? "Quy trình 3 bước: Sự cố - Tiếp nhận → Xử lý → Hoàn công" : "Quy trình 5 bước: Tuần tra → Phiếu đề xuất → Phê duyệt → Xử lý → Hoàn công"}
             </p>
           </div>
-          <button className="btn-primary" onClick={() => { fetchData(); fetchCounts(); }}>
-            <i className="material-icons" style={{ fontSize: 18 }}>refresh</i> Làm mới
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            {showMode === "patrol" && onExportPDF && (
+              <button className="btn-secondary" onClick={onExportPDF} style={{ display: "flex", alignItems: "center", gap: 6, color: "#dc2626", borderColor: "#fca5a5" }}>
+                <i className="material-icons" style={{ fontSize: 18 }}>picture_as_pdf</i> Xuất PDF
+              </button>
+            )}
+            <button className="btn-primary" onClick={() => { fetchData(); fetchCounts(); }}>
+              <i className="material-icons" style={{ fontSize: 18 }}>refresh</i> Làm mới
+            </button>
+          </div>
         </div>
 
         {/* === Workflow Bar (Chỉ hiển thị khi có nhiều hơn 1 tab) === */}
