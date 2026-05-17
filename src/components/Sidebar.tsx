@@ -16,14 +16,16 @@ interface SidebarProps {
 const TAB_LABELS: Record<string, string> = {
   map: "Bản đồ GIS",
   dashboard: "Tổng quan",
-  trees: "Quản lý Cây xanh",
-  parks: "Công viên & Mảng xanh",
+  trees: "Cây xanh",
+  parks: "Công viên",
+  greenAreas: "Mảng xanh",
   tasks: "Phiếu đề xuất & Sự cố",
-  wards: "Quản lý Địa bàn",
-  species: "Danh mục Loài cây",
-  contracts: "Gói thầu bảo trì",
-  contractors: "Đơn vị thực hiện",
-  users: "Hệ thống người dùng",
+  spatial: "Phân tích GIS",
+  species: "Loài cây",
+  wards: "Phường xã",
+  contracts: "Gói thầu",
+  contractors: "Nhà thầu",
+  users: "Người dùng",
 };
 
 const MAIN_NAV = [
@@ -31,11 +33,13 @@ const MAIN_NAV = [
   { id: "dashboard", label: TAB_LABELS.dashboard, icon: "dashboard" },
   { id: "trees", label: TAB_LABELS.trees, icon: "park" },
   { id: "parks", label: TAB_LABELS.parks, icon: "nature" },
+  { id: "greenAreas", label: TAB_LABELS.greenAreas, icon: "forest" },
   { id: "tasks", label: TAB_LABELS.tasks, icon: "assignment" },
+  { id: "spatial", label: TAB_LABELS.spatial, icon: "layers" },
 ];
 
 const CONFIG_NAV = [
-  { id: "species", label: TAB_LABELS.species, icon: "eco" },
+  { id: "species", label: TAB_LABELS.species, icon: "potted_plant" },
   { id: "wards", label: TAB_LABELS.wards, icon: "location_city" },
   { id: "contracts", label: TAB_LABELS.contracts, icon: "description" },
   { id: "contractors", label: TAB_LABELS.contractors, icon: "business" },

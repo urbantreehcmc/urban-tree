@@ -15,6 +15,8 @@ interface SpatialAnalysisPanelProps {
   trees: TreeRecord[];
   onProjectBoundaryChange: (boundary: { polygon: Coordinate[]; color: string } | null) => void;
   onAffectedTreeIds: (ids: Set<string>) => void;
+  isOpen?: boolean;
+  setIsOpen?: (open: boolean) => void;
 }
 
 interface AnalysisResult {
@@ -27,7 +29,7 @@ interface AnalysisResult {
   estimatedCost: number;
 }
 
-// Äơn giá bá»“i thường giả lập (VNÄ)
+// Ä ơn giá bá»“i thường giả lập (VNÄ )
 const COMPENSATION_RATE: Record<string, number> = {
   "khoe": 5_000_000,
   "sauBenh": 2_000_000,
@@ -39,8 +41,12 @@ export default function SpatialAnalysisPanel({
   trees,
   onProjectBoundaryChange,
   onAffectedTreeIds,
+  isOpen: controlledIsOpen,
+  setIsOpen: controlledSetIsOpen,
 }: SpatialAnalysisPanelProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [localIsOpen, setLocalIsOpen] = useState(false);
+  const isOpen = controlledIsOpen !== undefined ? controlledIsOpen : localIsOpen;
+  const setIsOpen = controlledSetIsOpen !== undefined ? controlledSetIsOpen : setLocalIsOpen;
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [uploadedGeoJSON, setUploadedGeoJSON] = useState<{ name: string; polygon: Coordinate[] } | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
@@ -174,29 +180,6 @@ export default function SpatialAnalysisPanel({
 
   return (
     <>
-      {/* Toggle Button */}
-      <button
-        id="spatial-analysis-toggle"
-        onClick={() => setIsOpen(!isOpen)}
-        className="absolute top-[10px] right-[48px] z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all duration-300 cursor-pointer shadow-md"
-        style={{
-          background: isOpen
-            ? "linear-gradient(to right, #2563eb, #7e3af2)"
-            : "#ffffff",
-          border: isOpen ? "1px solid #2563eb" : "1px solid #e0e0e0",
-          backdropFilter: "blur(12px)",
-          color: isOpen ? "#fff" : "#333",
-          boxShadow: isOpen ? "0 4px 20px rgba(168,85,247,0.3)" : "0 4px 12px rgba(0,0,0,0.1)",
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-          <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
-          <line x1="12" y1="22.08" x2="12" y2="12" />
-        </svg>
-        Phân tích GIS
-      </button>
-
       {/* Panel */}
       {isOpen && (
         <div
@@ -296,7 +279,7 @@ export default function SpatialAnalysisPanel({
                         Đang phân tích...
                       </span>
                     ) : (
-                      "âš¡ Chạy ST_Intersects"
+                      "⚡ Chạy ST_Intersects"
                     )}
                   </button>
                   <button onClick={clearAnalysis} className="px-4 py-3 rounded-xl bg-[#f5f7fa] border border-[#e0e0e0] text-[#666] hover:text-[#ef4444] hover:bg-[#ef4444]/10 text-sm font-bold transition-all cursor-pointer">

@@ -28,6 +28,7 @@ interface MapViewProps {
   trees?: TreeRecord[];
   onManageTree?: (id: string) => void;
   onCreatePatrol?: (treeInfo: { id: string; name: string; location: string; lat: number; lng: number }) => void;
+  defaultSpatialOpen?: boolean;
 }
 
 const INITIAL_VIEW = {
@@ -433,11 +434,18 @@ const GOOGLE_HYBRID_STYLE = {
   ]
 };
 
-export default function MapView({ trees: initialTrees = [], onManageTree, onCreatePatrol }: MapViewProps) {
+export default function MapView({ trees: initialTrees = [], onManageTree, onCreatePatrol, defaultSpatialOpen }: MapViewProps) {
   const mapRef = useRef<MapRef>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [viewportBounds, setViewportBounds] = useState<any>(null);
   const [zoomLevel, setZoomLevel] = useState(INITIAL_VIEW.zoom);
+  const [isSpatialOpen, setIsSpatialOpen] = useState(false);
+
+  useEffect(() => {
+    if (defaultSpatialOpen !== undefined) {
+      setIsSpatialOpen(defaultSpatialOpen);
+    }
+  }, [defaultSpatialOpen]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -1384,6 +1392,8 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
         trees={activeTrees}
         onProjectBoundaryChange={setProjectBoundary}
         onAffectedTreeIds={setAffectedTreeIds}
+        isOpen={isSpatialOpen}
+        setIsOpen={setIsSpatialOpen}
       />
       
       {/* Street View Panel Overlay Toàn màn hình */}

@@ -36,11 +36,13 @@ const MapView = dynamic(() => import("@/components/MapView"), {
 const TAB_LABELS: Record<string, string> = {
   map: "Bản đồ GIS",
   dashboard: "Tổng quan Hệ thống",
-  trees: "Quản lý Cây xanh",
-  parks: "Công viên & Mảng xanh",
-  tasks: "Công việc & Sự cố",
-  species: "Danh mục Loài cây",
-  wards: "Danh mục Phường xã",
+  trees: "Cây xanh",
+  parks: "Công viên",
+  greenAreas: "Mảng xanh",
+  tasks: "Phiếu đề xuất & Sự cố",
+  spatial: "Phân tích GIS",
+  species: "Loài cây",
+  wards: "Phường xã",
   contracts: "Gói thầu",
   contractors: "Nhà thầu",
   users: "Người dùng",
@@ -51,7 +53,9 @@ const TAB_ICONS: Record<string, string> = {
   dashboard: "dashboard",
   trees: "park",
   parks: "nature",
+  greenAreas: "forest",
   tasks: "assignment",
+  spatial: "layers",
   species: "potted_plant",
   wards: "location_city",
   contracts: "description",
@@ -244,11 +248,18 @@ export default function Home() {
           </div>
 
           {/* Module Content */}
-          <div style={{ height: activeTab === "map" ? "calc(100vh - 60px - 53px)" : "auto", minHeight: activeTab === "map" ? undefined : "calc(100vh - 60px - 53px)" }}>
-            {activeTab === "map" && <MapView onManageTree={setSelectedTreeId} onCreatePatrol={(info) => setPatrolTarget({ ...info, lat: info.lat ?? null, lng: info.lng ?? null })} />}
+          <div style={{ height: (activeTab === "map" || activeTab === "spatial") ? "calc(100vh - 60px - 53px)" : "auto", minHeight: (activeTab === "map" || activeTab === "spatial") ? undefined : "calc(100vh - 60px - 53px)" }}>
+            {(activeTab === "map" || activeTab === "spatial") && (
+              <MapView 
+                onManageTree={setSelectedTreeId} 
+                onCreatePatrol={(info) => setPatrolTarget({ ...info, lat: info.lat ?? null, lng: info.lng ?? null })} 
+                defaultSpatialOpen={activeTab === "spatial"}
+              />
+            )}
             {activeTab === "dashboard" && <Dashboard />}
             {activeTab === "trees" && <TreeTable onManageTree={setSelectedTreeId} />}
-            {activeTab === "parks" && <ParkManager />}
+            {activeTab === "parks" && <ParkManager showMode="parks" />}
+            {activeTab === "greenAreas" && <ParkManager showMode="greenAreas" />}
             {activeTab === "tasks" && <TaskManager key={taskRefreshKey} onOpenTicket={setSelectedTicketId} onShowAlert={showAlert} />}
             {activeTab === "species" && <SpeciesManagement />}
             {activeTab === "wards" && <WardTable />}
