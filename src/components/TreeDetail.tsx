@@ -346,8 +346,59 @@ export default function TreeDetail({ tree, onBack, onCreatePatrol }: TreeDetailP
                           onChange={(val) => handleInputChange("le", val)}
                         />
                         <div style={{ height: 1, background: "#f1f5f9", gridColumn: "span 2", margin: "8px 0" }}></div>
-                        <InfoRow label="Vĩ độ (Lat)" value={formData.lat?.toFixed(6) || "—"} />
-                        <InfoRow label="Kinh độ (Lng)" value={formData.lng?.toFixed(6) || "—"} />
+                        {isEditing ? (
+                          <div style={{ gridColumn: "span 2", display: "flex", flexDirection: "column", gap: 12, paddingBottom: 8 }}>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", background: "#f0fdf4", padding: "10px", borderRadius: 8, border: "1px solid #bbf7d0" }}>
+                               <input 
+                                 type="text"
+                                 placeholder="Dán nhanh tọa độ (vd: 10.756, 106.685)"
+                                 className="form-input"
+                                 style={{ flex: 1, fontSize: 13, background: "white", padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, margin: 0 }}
+                                 onChange={(e) => {
+                                   const val = e.target.value;
+                                   if (val.includes(",")) {
+                                     const parts = val.split(",");
+                                     const lat = parseFloat(parts[0].trim());
+                                     const lng = parseFloat(parts[1].trim());
+                                     if (!isNaN(lat) && !isNaN(lng)) {
+                                       handleInputChange("lat", lat);
+                                       handleInputChange("lng", lng);
+                                     }
+                                   }
+                                 }}
+                               />
+                               <button 
+                                 className="btn-secondary" 
+                                 style={{ padding: "8px 12px", background: "white", borderColor: "#cbd5e1", display: "flex", alignItems: "center", gap: 6 }}
+                                 onClick={() => {
+                                   if (navigator.geolocation) {
+                                     navigator.geolocation.getCurrentPosition((position) => {
+                                       handleInputChange("lat", position.coords.latitude);
+                                       handleInputChange("lng", position.coords.longitude);
+                                     }, (err) => {
+                                       alert("Không thể lấy vị trí GPS: " + err.message);
+                                     }, { enableHighAccuracy: true });
+                                   } else {
+                                     alert("Trình duyệt không hỗ trợ định vị GPS.");
+                                   }
+                                 }}
+                                 title="Lấy vị trí GPS hiện tại"
+                               >
+                                 <i className="material-icons" style={{ fontSize: 18, color: "#16a34a" }}>my_location</i>
+                                 <span style={{ fontSize: 12, fontWeight: 600, color: "#16a34a" }}>GPS</span>
+                               </button>
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                              <InfoRow label="Vĩ độ (Lat)" value={formData.lat?.toFixed(6) || ""} editable={true} onChange={(v) => handleInputChange("lat", parseFloat(v) || null)} />
+                              <InfoRow label="Kinh độ (Lng)" value={formData.lng?.toFixed(6) || ""} editable={true} onChange={(v) => handleInputChange("lng", parseFloat(v) || null)} />
+                            </div>
+                          </div>
+                        ) : (
+                          <>
+                            <InfoRow label="Vĩ độ (Lat)" value={formData.lat?.toFixed(6) || "—"} />
+                            <InfoRow label="Kinh độ (Lng)" value={formData.lng?.toFixed(6) || "—"} />
+                          </>
+                        )}
                         <InfoRow label="VN2000 (X)" value={formData.lat && formData.lng ? proj4('WGS84', VN2000_HCM, [formData.lng, formData.lat])[0].toFixed(2) : "—"} />
                         <InfoRow label="VN2000 (Y)" value={formData.lat && formData.lng ? proj4('WGS84', VN2000_HCM, [formData.lng, formData.lat])[1].toFixed(2) : "—"} />
                       </div>

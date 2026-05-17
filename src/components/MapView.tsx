@@ -1244,18 +1244,25 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
 
       {/* Edit Location Control Panel */}
       {editingTree && (
-        <div className="absolute top-4 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto card px-6 py-4 flex flex-col items-center gap-3 z-50 w-auto sm:w-[320px] border border-emerald-500/30 shadow-2xl shadow-emerald-500/10 fade-in bg-white">
-          <div className="flex items-center gap-3 w-full">
-            <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center animate-pulse">
-              <span className="text-xl">📍</span>
+        <div className="absolute top-4 left-4 right-4 sm:left-1/2 sm:-translate-x-1/2 sm:right-auto card px-5 py-4 flex flex-col items-center gap-4 z-50 w-auto sm:w-[360px] border border-[#10b981] shadow-2xl shadow-emerald-500/20 fade-in bg-white">
+          <div className="flex items-start gap-4 w-full">
+            <div className="w-10 h-10 shrink-0 rounded-full bg-[#ecfdf5] flex items-center justify-center animate-pulse border border-[#34d399]">
+              <i className="material-icons text-[#10b981]">place</i>
             </div>
-            <div>
-              <p className="text-sm font-bold text-[#333]">Chế độ dời vị trí</p>
-              <p className="text-[11px] text-[#666]">Kéo thả icon trên bản đồ tới vị trí mới</p>
+            <div className="flex-1">
+              <h3 className="text-base font-bold text-[#1e293b] m-0 leading-tight">Cập nhật tọa độ mới</h3>
+              <p className="text-xs text-[#64748b] mt-1 leading-relaxed">Hãy di chuyển bản đồ và kéo thả ghim màu đỏ đến vị trí chính xác của cây.</p>
             </div>
           </div>
-          
-          <div className="flex gap-2 w-full mt-1">
+          <div className="flex w-full gap-3 mt-1">
+            <button
+              onClick={() => setEditingTree(null)}
+              disabled={isSavingLocation}
+              className="btn-secondary"
+              style={{ flex: 1, padding: "8px 16px", justifyContent: "center" }}
+            >
+              Hủy bỏ
+            </button>
             <button
               onClick={async () => {
                 setIsSavingLocation(true);
@@ -1268,7 +1275,6 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
                   if (error) throw error;
                   
                   alert("Đã lưu vị trí cây thành công!");
-                  
                   setEditingTree(null);
                 } catch (err: any) {
                   console.error("Lỗi cập nhật vị trí:", err);
@@ -1278,16 +1284,11 @@ export default function MapView({ trees: initialTrees = [], onManageTree, onCrea
                 }
               }}
               disabled={isSavingLocation}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-2 rounded-lg transition-colors disabled:opacity-50 cursor-pointer"
+              className="btn-primary"
+              style={{ flex: 1, padding: "8px 16px", justifyContent: "center", backgroundColor: "#10b981", borderColor: "#10b981" }}
             >
+              <i className="material-icons" style={{ fontSize: 18 }}>{isSavingLocation ? "sync" : "save"}</i>
               {isSavingLocation ? "Đang lưu..." : "Lưu vị trí"}
-            </button>
-            <button
-              onClick={() => setEditingTree(null)}
-              disabled={isSavingLocation}
-              className="flex-1 bg-white/10 hover:bg-white/20 text-[#333] text-xs font-bold py-2 rounded-lg transition-colors disabled:opacity-50 border border-white/5"
-            >
-              Hủy
             </button>
           </div>
         </div>
